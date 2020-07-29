@@ -3,17 +3,22 @@ from discord.ext import commands
 import json
 import os
 import random
+import discord
+
 
 def read_json(filename):
     with open(filename) as f:
         return json.load(f)
 
+
 def write_json(filename, data):
     with open(filename, 'w') as f:
         json.dump(data, f)
 
+
 def format_nickname(string, data):
     return string.format(**data)
+
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -25,23 +30,30 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if 'welcome' in message.content.lower():
-            emoji_list = [737970174975541248, 737969852261597265]
-            emoji_object_list = []
 
-            for emoji in emoji_list:
-                emoji_object = self.bot.get_emoji(emoji)
-                emoji_object_list.append(emoji_object)
+        emojis = read_json('assets/emojis.json')
 
-            choosen_emoji = random.choice(emoji_object_list)
+        for word in message.content.split():
+            if word.lower() in emojis:
+                print('Word found in emoji json')
+                emoji_list = emojis[word.lower()]['emojis']
+                print(emoji_list)
 
-            await message.add_reaction(str(choosen_emoji))
+                emoji_object_list = []
+
+                for emoji in emoji_list:
+                    try:
+                        emoji_object = self.bot.get_emoji(int(emoji))
+                    except ValueError:
+                        emoji_object = emoji
+                    emoji_object_list.append(emoji_object)
+
+                choosen_emoji = random.choice(emoji_object_list)
+
+                await message.add_reaction(str(choosen_emoji))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        print('Member updated')
-        print(f'Before: {before.roles}')
-        print(f'After: {after.roles}')
 
         channel = after.guild.get_channel(630244103397048333)
 
@@ -50,41 +62,42 @@ class Events(commands.Cog):
 
         nicknames = read_json('assets/nicknames.json')
 
+        role_before = None
+
+        for role in before.roles:
+            if role.id in nicknames:
+                role_before = role
+
         if len(before.roles) < len(after.roles):
-            await channel.send(f'Role added to the user {after.name}')
-            await channel.send(f'New roles: {new_roles}')
 
             role_id = new_roles[0].id
 
             if str(role_id) in nicknames:
-                await channel.send(nicknames[str(role_id)])
-                await channel.send('Found role in json data')
 
                 role = nicknames[str(role_id)]
 
                 if 'nickname' in role:
 
-                    formatted_nickname = format_nickname(role['nickname'], {'name': after.name})
+                    formatted_nickname = format_nickname(
+                        role['nickname'], {'name': after.name})
 
                     await after.edit(nick=formatted_nickname)
-                    await channel.send(f'Nickname changed to {formatted_nickname}')
-
 
         elif len(before.roles) > len(after.roles):
-            await channel.send(f'Role remove from the user {after.name}')
-            await channel.send(f'Roles removed: {removed_roles}')
 
             role_id = removed_roles[0].id
 
             if str(role_id) in nicknames:
-                await channel.send(nicknames[str(role_id)])
-                await channel.send('Found role in json data')
 
                 role = nicknames[str(role_id)]
 
                 if 'nickname' in role:
                     await after.edit(nick='')
-                    await channel.send(f'Nickname removed')
+
+                    if role_before:
+                        nickname = nicknames[role_before.id]['nickname']
+                        await after.edit(nick=nickname)
+
 
 def setup(bot):
     bot.add_cog(Events(bot))

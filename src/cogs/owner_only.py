@@ -5,6 +5,8 @@ import os
 import ast
 
 # For eval command
+
+
 def insert_returns(body):
     # insert return stmt if the last expression is a expression statement
     if isinstance(body[-1], ast.Expr):
@@ -19,6 +21,7 @@ def insert_returns(body):
     # for with blocks, again we insert returns into the body
     if isinstance(body[-1], ast.With):
         insert_returns(body[-1].body)
+
 
 class OwnerOnly(commands.Cog):
 
@@ -65,19 +68,22 @@ class OwnerOnly(commands.Cog):
             await ctx.send(f'Changed presence to ``{presence_text}``')
 
         elif presence_type.lower() == 'streaming':
-            stream = discord.Streaming(name=presence_text, url='https://www.twitch.tv/syed_ahkam')
+            stream = discord.Streaming(
+                name=presence_text, url='https://www.twitch.tv/syed_ahkam')
             await ctx.bot.change_presence(status=discord.Status.online, activity=stream)
 
             await ctx.send(f'Changed presence to ``{presence_text}``')
 
         elif presence_type.lower() == 'listening':
-            listening = discord.Activity(type=discord.ActivityType.listening, name=presence_text)
+            listening = discord.Activity(
+                type=discord.ActivityType.listening, name=presence_text)
             await ctx.bot.change_presence(status=discord.Status.online, activity=listening)
 
             await ctx.send(f'Changed presence to ``{presence_text}``')
 
         elif presence_type.lower() == 'watching':
-            activity = discord.Activity(type=discord.ActivityType.watching, name=presence_text)
+            activity = discord.Activity(
+                type=discord.ActivityType.watching, name=presence_text)
             await ctx.bot.change_presence(status=discord.Status.online, activity=activity)
 
             await ctx.send(f'Changed presence to ``{presence_text}``')
@@ -95,25 +101,6 @@ class OwnerOnly(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def eval(self, ctx, *, cmd):
-        """Evaluates input.
-        Input is interpreted as newline seperated statements.
-        If the last statement is an expression, that is the return value.
-        Usable globals:
-          - `bot`: the bot instance
-          - `discord`: the discord module
-          - `commands`: the discord.ext.commands module
-          - `ctx`: the invokation context
-          - `__import__`: the builtin `__import__` function
-        Such that `>eval 1 + 1` gives `2` as the result.
-        The following invokation will cause the bot to send the text '9'
-        to the channel of invokation and return '3' as the result of evaluating
-        >eval ```
-        a = 1 + 2
-        b = a * 2
-        await ctx.send(a + b)
-        a
-        ```
-        """
         fn_name = "_eval_expr"
 
         cmd = cmd.strip("` ")
@@ -141,6 +128,7 @@ class OwnerOnly(commands.Cog):
 
         result = (await eval(f"{fn_name}()", env))
         await ctx.send(f'```py\n{result}\n```')
+
 
 def setup(bot):
     bot.add_cog(OwnerOnly(bot))
