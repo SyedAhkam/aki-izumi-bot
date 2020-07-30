@@ -29,6 +29,13 @@ class Events(commands.Cog):
     async def on_ready(self):
         print(f'Logged in as {self.bot.user.name}')
 
+        name = '*₊°🌸オタク│Otaku Akademī │🎮❀°•˚ server | Stay safe uwu'
+
+        activity = discord.Activity(
+            type=discord.ActivityType.watching, name=name)
+
+        await self.bot.change_presence(status=discord.Status.online, activity=activity)
+
     @commands.Cog.listener()
     async def on_message(self, message):
 
