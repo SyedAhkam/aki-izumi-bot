@@ -6,9 +6,9 @@ colors = {
 }
 
 
-async def normal(text, name, ctx):
+def normal(text, name, ctx):
     embed = discord.Embed(color=colors['normal'], description=text)
-    embed.set_author(name=name, url=ctx.bot.user.avatar_url)
+    embed.set_author(name=name, icon_url=ctx.bot.user.avatar_url)
 
     return embed
 
