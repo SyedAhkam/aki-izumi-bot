@@ -1,1 +1,4 @@
 .env
+/assets/emojis.json
+/assets/counting.json
+/assets/nicknames.json
