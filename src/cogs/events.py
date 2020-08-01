@@ -70,16 +70,23 @@ class Events(commands.Cog):
                     counting_data = read_json('assets/counting.json')
                     last_number = counting_data['last_number']
 
+                    ctx = await self.bot.get_context(message)
+
                     # if last_number == num:
                     #     await message.channel.send(f'Wrong number!, Should be {last_number + 1} instead.')
                     #     return
+
+                    if message.author.id == counting_data['last_msg_author_id']:
+                        embed = embeds.error(
+                            f'Send one message at a time!', 'Error', ctx)
+                        # await message.channel.send(f'{message.author.mention}, Send one message at a time!', delete_after=3)
+                        await message.channel.send(message.author.mention, embed=embed, delete_after=3)
+                        await message.delete()
 
                     if not (last_number + 1) == num:
 
                         emoji = self.bot.get_emoji(738498530657828875)
                         await message.add_reaction(str(emoji))
-
-                        ctx = await self.bot.get_context(message)
 
                         embed = embeds.normal(
                             f'Wrong number! Chain breaked by ``{message.author.name}``', 'Chain Breaked!', ctx)
