@@ -82,6 +82,7 @@ class Events(commands.Cog):
                         # await message.channel.send(f'{message.author.mention}, Send one message at a time!', delete_after=3)
                         await message.channel.send(message.author.mention, embed=embed, delete_after=3)
                         await message.delete()
+                        return
 
                     if not (last_number + 1) == num:
 
