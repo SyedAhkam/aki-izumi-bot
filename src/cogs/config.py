@@ -3,6 +3,7 @@ from discord.ext import commands
 import json
 import discord
 import typing
+import embeds
 
 
 def read_json(filename):
@@ -114,6 +115,45 @@ class Config(commands.Cog):
 
         write_json('assets/emojis.json', emojis)
         await ctx.send(f'Successfully removed ``{trigger_word}``')
+
+    # add admin only decorator
+    @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
+    @commands.has_role(697877262737080391)
+    async def placeholders(self, ctx):
+
+        placeholders = [
+            {"name": "user", "help": "Gives the user's name."},
+            {"name": "user_mention", "help": "Gives the user's tag as a mention."},
+            {"name": "user_id", "help": "Gives the user's id."},
+            {"name": "user_tag", "help": "Gives the user's tag."},
+            {"name": "user_color", "help": "Gives the user's color."},
+            {"name": "user_avatar_url", "help": "Gives the user's avatar url."},
+            {"name": "server", "help": "Gives the server's name"},
+            {"name": "server_members", "help": "Gives the server's total members."},
+            {"name": "server_icon_url", "help": "Gives the server's icon url."}
+        ]
+
+        # description = '''
+        # ``{user}`` gives the user's name.
+        # ``{user_mention}`` gives the user's tag as a mention.
+        # ``{user_id}`` gives the user's id.
+        # ``{user_tag}`` gives the user's tag.
+        # ``{server}`` gives the server's name.
+        # ``{server_members}`` gives the server's total members.
+        # '''
+
+        emoji = self.bot.get_emoji(740571420203024496)
+
+        description = ''
+        for placeholder in placeholders:
+            name = '{' + placeholder['name'] + '}'
+            help = placeholder['help']
+            to_be_added = f'{str(emoji)}``{name}`` - {help}\n'
+            description += to_be_added
+
+        embed = embeds.normal(description, 'Placeholders', ctx)
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
