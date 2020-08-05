@@ -7,6 +7,7 @@ import datetime
 
 prefix = 'a!'
 
+
 def format(command):
     cmd_and_aliases = "|".join([str(command), *command.aliases])
 
@@ -14,11 +15,13 @@ def format(command):
 
     for key, value in command.params.items():
         if key not in ("self", "ctx"):
-            params.append(f"[{key}]" if "NoneType" in str(value) else f"<{key}>")
+            params.append(f"[{key}]" if "NoneType" in str(
+                value) else f"<{key}>")
 
     params = " ".join(params)
 
-    return f"`{prefix} {cmd_and_aliases} {params}`"
+    return f"`{prefix}{cmd_and_aliases} {params}`"
+
 
 class HelpMenu(ListPageSource):
     def __init__(self, ctx, data):
@@ -29,15 +32,18 @@ class HelpMenu(ListPageSource):
         offset = (menu.current_page*self.per_page) + 1
         len_data = len(self.entries)
 
-        menu_embed = discord.Embed(timestamp=datetime.datetime.utcnow(), color=0xb5fffd)
-        menu_embed.set_author(name='Help', url=discord.Embed.Empty, icon_url=self.ctx.bot.user.avatar_url)
+        menu_embed = discord.Embed(
+            timestamp=datetime.datetime.utcnow(), color=0xb5fffd)
+        menu_embed.set_author(
+            name='Help', url=discord.Embed.Empty, icon_url=self.ctx.bot.user.avatar_url)
 
         if self.ctx.guild:
             menu_embed.set_thumbnail(url=self.ctx.guild.icon_url)
         else:
             menu_embed.set_thumbnail(url=self.ctx.author.avatar_url)
 
-        menu_embed.set_footer(text=f"{offset:,} - {min(len_data, offset+self.per_page-1):,} of {len_data:,} commands.")
+        menu_embed.set_footer(
+            text=f"{offset:,} - {min(len_data, offset+self.per_page-1):,} of {len_data:,} commands.")
 
         for name, value in fields:
             menu_embed.add_field(name=name, value=value, inline=False)
@@ -51,6 +57,7 @@ class HelpMenu(ListPageSource):
             fields.append((entry.help or "No description", format(entry)))
         return await self.write_page(menu, fields)
 
+
 class Help(commands.Cog):
 
     def __init__(self, bot):
@@ -63,16 +70,24 @@ class Help(commands.Cog):
         help = command.help
         cog = command.cog_name
 
-        help_embed.description = f'{formatted}\nCog:{cog}\n{help}'
+        # help_embed.description = f'{formatted}\nCog:{cog}\n{help}'
+        help_embed.description = f'''
+        {formatted}
+        **Category:** {cog}
+        **Description:** {help if help else "No help message."}
+        '''
 
         await ctx.send(embed=help_embed)
 
     @commands.command(name='help', help='Shows this message')
     async def help(self, ctx, *, command_or_cog=None):
 
-        help_embed = discord.Embed(timestamp=datetime.datetime.utcnow(), color=0xb5fffd)
-        help_embed.set_author(name='Help', url=discord.Embed.Empty, icon_url=ctx.bot.user.avatar_url)
-        help_embed.set_footer(text=f'Requested by {ctx.author.name}', icon_url=discord.Embed.Empty)
+        help_embed = discord.Embed(
+            timestamp=datetime.datetime.utcnow(), color=0xb5fffd)
+        help_embed.set_author(
+            name='Help', url=discord.Embed.Empty, icon_url=ctx.bot.user.avatar_url)
+        help_embed.set_footer(
+            text=f'Requested by {ctx.author.name}', icon_url=discord.Embed.Empty)
         if ctx.guild:
             help_embed.set_thumbnail(url=ctx.guild.icon_url)
         else:
@@ -86,7 +101,8 @@ class Help(commands.Cog):
                 if len(cog.get_commands()) < 1:
                     await ctx.send('No commands in this cog.')
                     return
-                menu = MenuPages(source=HelpMenu(ctx, list(cog.get_commands())), delete_message_after=True, timeout=60.0)
+                menu = MenuPages(source=HelpMenu(
+                    ctx, list(cog.get_commands())), delete_message_after=True, timeout=60.0)
                 await menu.start(ctx)
                 return
 
@@ -96,10 +112,9 @@ class Help(commands.Cog):
             await ctx.send(f'No command or cog found by the name ``{command_or_cog}``')
             return
 
-
         menu = MenuPages(source=HelpMenu(ctx, list(self.bot.commands)),
-                             delete_message_after=True,
-                             timeout=60.0)
+                         delete_message_after=True,
+                         timeout=60.0)
         await menu.start(ctx)
 
 
