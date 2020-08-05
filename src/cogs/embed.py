@@ -193,8 +193,6 @@ class Embed(commands.Cog):
             return await ctx.send('Please provide the name of embed which you want to edit.')
         if not text:
             return await ctx.send('Text is a required field which you\'re missing.')
-        # if not icon_url:
-        #     icon_url = discord.Embed.Empty
 
         embed_data = read_json('assets/embeds.json')
 
@@ -332,10 +330,6 @@ class Embed(commands.Cog):
             return await ctx.send('Please provide the name of embed which you want to edit.')
         if not author_name:
             return await ctx.send('Author name is a required field which you\'re missing.')
-        # if not icon_url:
-        #     icon_url = discord.Embed.Empty
-        # if not author_url:
-        #     author_url = discord.Embed.Empty
 
         embed_data = read_json('assets/embeds.json')
 

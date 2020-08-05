@@ -116,7 +116,6 @@ class Config(commands.Cog):
         write_json('assets/emojis.json', emojis)
         await ctx.send(f'Successfully removed ``{trigger_word}``')
 
-    # add admin only decorator
     @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
     @commands.has_role(697877262737080391)
     async def placeholders(self, ctx):
@@ -132,15 +131,6 @@ class Config(commands.Cog):
             {"name": "server_members", "help": "Gives the server's total members."},
             {"name": "server_icon_url", "help": "Gives the server's icon url."}
         ]
-
-        # description = '''
-        # ``{user}`` gives the user's name.
-        # ``{user_mention}`` gives the user's tag as a mention.
-        # ``{user_id}`` gives the user's id.
-        # ``{user_tag}`` gives the user's tag.
-        # ``{server}`` gives the server's name.
-        # ``{server_members}`` gives the server's total members.
-        # '''
 
         emoji = self.bot.get_emoji(740571420203024496)
 
