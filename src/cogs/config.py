@@ -145,6 +145,81 @@ class Config(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command(name='set_verification_trigger_word', help='Set the word to be triggered for verification.')
+    async def set_verification_trigger_word(self, ctx, *, trigger_word=None):
+        if not trigger_word:
+            return await ctx.send('Please provide a trigger_word.')
+
+        config_data = read_json('assets/config.json')
+
+        with open('assets/config.json') as f:
+            data = json.load(f)
+
+            temp = data
+
+            data = {}
+            data['verification_trigger_word'] = trigger_word
+
+            temp.update(data)
+
+        write_json('assets/config.json', temp)
+
+        # for some reason i gotta do this
+        ctx.bot.unload_extension(f'cogs.events')
+        ctx.bot.load_extension(f'cogs.events')
+
+        await ctx.send('All done!')
+
+    @commands.command(name='set_verification_followup_message', help='Set a message to be sent after a user is verified.')
+    async def set_verification_followup_message(self, ctx, *, message=None):
+        if not message:
+            return await ctx.send('Please provide a message.')
+
+        config_data = read_json('assets/config.json')
+
+        with open('assets/config.json') as f:
+            data = json.load(f)
+
+            temp = data
+
+            data = {}
+            data['verification_followup_message'] = message
+
+            temp.update(data)
+
+        write_json('assets/config.json', temp)
+
+        # for some reason i gotta do this
+        ctx.bot.unload_extension(f'cogs.events')
+        ctx.bot.load_extension(f'cogs.events')
+
+        await ctx.send('All done!')
+
+    @commands.command(name='set_verification_channel', help='Set the channel to be used for verification.')
+    async def set_verification_channel(self, ctx, *, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        config_data = read_json('assets/config.json')
+
+        with open('assets/config.json') as f:
+            data = json.load(f)
+
+            temp = data
+
+            data = {}
+            data['verification_channel_id'] = channel.id
+
+            temp.update(data)
+
+        write_json('assets/config.json', temp)
+
+        # for some reason i gotta do this
+        ctx.bot.unload_extension(f'cogs.events')
+        ctx.bot.load_extension(f'cogs.events')
+
+        await ctx.send('All done!')
+
 
 def setup(bot):
     bot.add_cog(Config(bot))

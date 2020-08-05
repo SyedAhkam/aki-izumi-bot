@@ -21,6 +21,9 @@ def format_nickname(string, data):
     return string.format(**data)
 
 
+config_data = read_json('assets/config.json')
+
+
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -118,6 +121,22 @@ class Events(commands.Cog):
 
                 except ValueError:
                     return
+
+        if message.channel.id == config_data['verification_channel_id']:
+            if message.content == config_data['verification_trigger_word']:
+
+                verified_role = message.guild.get_role(
+                    config_data['verified_role_id'])
+
+                await message.author.add_roles(verified_role)
+
+                ctx = await self.bot.get_context(message)
+
+                embed = embeds.normal(
+                    config_data['verification_followup_message'], 'You\'ve been verified!', ctx)
+                await message.channel.send(content=message.author.mention, embed=embed)
+
+                await message.delete()
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
