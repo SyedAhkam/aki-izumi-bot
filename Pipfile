@@ -10,6 +10,8 @@ autopep8 = "*"
 discord = "*"
 python-dotenv = "*"
 dateparser = "*"
+aiohttp = "*"
+jikanpy = "*"
 
 [requires]
 python_version = "3.8"
