@@ -20,6 +20,11 @@ def error(text, name, ctx):
     return embed
 
 
+def blank():
+    embed = discord.Embed(color=colors['normal'])
+    return embed
+
+
 def custom(title, color, description, timestamp, url):
 
     try:
