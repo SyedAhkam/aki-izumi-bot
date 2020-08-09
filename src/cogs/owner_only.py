@@ -3,10 +3,20 @@ from discord.ext import commands
 import discord
 import os
 import ast
+import json
+
+
+def read_json(filename):
+    with open(filename) as f:
+        return json.load(f)
+
+
+def write_json(filename, data):
+    with open(filename, 'w') as f:
+        json.dump(data, f)
+
 
 # For eval command
-
-
 def insert_returns(body):
     # insert return stmt if the last expression is a expression statement
     if isinstance(body[-1], ast.Expr):
@@ -128,6 +138,61 @@ class OwnerOnly(commands.Cog):
 
         result = (await eval(f"{fn_name}()", env))
         await ctx.send(f'```py\n{result}\n```')
+
+    @commands.command(name='blacklist', help='Blacklist a user from using the bot commands.')
+    @commands.is_owner()
+    async def blacklist(self, ctx, user: commands.UserConverter = None):
+
+        if not user:
+            await ctx.send('Please specify a user to blacklist.')
+            return
+
+        if user.id in ctx.bot.owner_ids:
+            return await ctx.send('Can\'t blacklist the owners.')
+
+        config_data = read_json('assets/config.json')
+
+        if user.id in config_data['blacklisted_users']:
+            return await ctx.send('User already blacklisted.')
+
+        with open('assets/config.json') as f:
+            data = json.load(f)
+
+            data['blacklisted_users'].append(user.id)
+
+        write_json('assets/config.json', data)
+
+        # for some reason i gotta do this
+        ctx.bot.unload_extension(f'cogs.events')
+        ctx.bot.load_extension(f'cogs.events')
+
+        await ctx.send(f'User {user.name} with id: {user.id} have been blacklisted successfully.')
+
+    @commands.command(name='unblacklist', help='Unblacklist a user from using the bot commands.')
+    @commands.is_owner()
+    async def unblacklist(self, ctx, user: commands.UserConverter = None):
+
+        if not user:
+            await ctx.send('Please specify a user to unblacklist.')
+            return
+
+        config_data = read_json('assets/config.json')
+
+        if not user.id in config_data['blacklisted_users']:
+            return await ctx.send('User not blacklisted.')
+
+        with open('assets/config.json') as f:
+            data = json.load(f)
+
+            data['blacklisted_users'].remove(user.id)
+
+        write_json('assets/config.json', data)
+
+        # for some reason i gotta do this
+        ctx.bot.unload_extension(f'cogs.events')
+        ctx.bot.load_extension(f'cogs.events')
+
+        await ctx.send(f'User {user.name} with id: {user.id} have been unblacklisted successfully.')
 
 
 def setup(bot):

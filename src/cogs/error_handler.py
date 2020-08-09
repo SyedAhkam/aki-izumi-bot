@@ -1,6 +1,8 @@
 from discord.ext import commands
+
 import logging
 import embeds
+import exceptions
 
 
 class ErrorHandler(commands.Cog):
@@ -18,6 +20,12 @@ class ErrorHandler(commands.Cog):
             return
 
         # Catching other errors
+
+        if isinstance(error, exceptions.UserBlacklisted):
+            embed = embeds.error(
+                'Sorry, you have been blacklisted from using this bot.\nAsk the bot owner to remove you from blacklist.', 'Blacklisted', ctx)
+            return await ctx.send(embed=embed)
+
         if isinstance(error, commands.errors.DisabledCommand):
             return await ctx.send('This command has been disabled by the owner, Ask them to enable it.')
 

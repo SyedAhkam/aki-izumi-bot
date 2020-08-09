@@ -5,6 +5,7 @@ import os
 import random
 import discord
 import embeds
+import exceptions
 
 
 def read_json(filename):
@@ -28,6 +29,12 @@ class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def bot_check(self, ctx):
+        if ctx.author.id in config_data['blacklisted_users']:
+            if ctx.message.content.startswith(('a!', 'A!')):
+                raise exceptions.UserBlacklisted(ctx)
+        return True
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'Logged in as {self.bot.user.name}')
@@ -46,9 +53,7 @@ class Events(commands.Cog):
 
         for word in message.content.split():
             if word.lower() in emojis:
-                print('Word found in emoji json')
                 emoji_list = emojis[word.lower()]['emojis']
-                print(emoji_list)
 
                 emoji_object_list = []
 
@@ -66,14 +71,21 @@ class Events(commands.Cog):
         # counting
         if message.channel.id == 735605047907582084:
 
+            ctx = await self.bot.get_context(message)
+
+            if message.author.id in config_data['blacklisted_users']:
+                embed = embeds.error(
+                    f'Sorry you\'ve been blacklisted from using this bot. Ask the bot owner to remove you from blacklist.', 'Blacklisted', ctx)
+                await message.channel.send(message.author.mention, embed=embed, delete_after=3)
+                await message.delete()
+                return
+
             if len(message.content.split()) >= 1:
                 try:
                     num = int(message.content)
 
                     counting_data = read_json('assets/counting.json')
                     last_number = counting_data['last_number']
-
-                    ctx = await self.bot.get_context(message)
 
                     # if last_number == num:
                     #     await message.channel.send(f'Wrong number!, Should be {last_number + 1} instead.')
