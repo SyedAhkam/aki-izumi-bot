@@ -4,6 +4,7 @@ import discord
 import os
 import ast
 import json
+import embeds
 
 
 def read_json(filename):
@@ -166,7 +167,9 @@ class OwnerOnly(commands.Cog):
         ctx.bot.unload_extension(f'cogs.events')
         ctx.bot.load_extension(f'cogs.events')
 
-        await ctx.send(f'User {user.name} with id: {user.id} have been blacklisted successfully.')
+        embed = embeds.normal(
+            f'``{user.name}`` has been blacklisted from using the bot. If you ever change your mind just do ``unblacklist`` command.', 'Blacklisted!', ctx)
+        await ctx.send(embed=embed)
 
     @commands.command(name='unblacklist', help='Unblacklist a user from using the bot commands.')
     @commands.is_owner()
@@ -192,7 +195,9 @@ class OwnerOnly(commands.Cog):
         ctx.bot.unload_extension(f'cogs.events')
         ctx.bot.load_extension(f'cogs.events')
 
-        await ctx.send(f'User {user.name} with id: {user.id} have been unblacklisted successfully.')
+        embed = embeds.normal(
+            f'``{user.name}`` has been removed from the bot blacklist.', 'Unblacklisted!', ctx)
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
