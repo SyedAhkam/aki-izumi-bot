@@ -20,6 +20,13 @@ def error(text, name, ctx):
     return embed
 
 
+def normal_no_description(name, ctx):
+    embed = discord.Embed(color=colors['normal'])
+    embed.set_author(name=name, icon_url=ctx.bot.user.avatar_url)
+
+    return embed
+
+
 def blank():
     embed = discord.Embed(color=colors['normal'])
     return embed
