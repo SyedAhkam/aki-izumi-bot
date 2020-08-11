@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f829e4a0a92b12f2758219af9274620b2e23fae0973560f400fe41a7a1813791"
+            "sha256": "afb07cbea786c5dd9e80d1dffe2a3d47ab876ee8b6f7aaf5107be15af71b3e28"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -91,6 +91,14 @@
                 "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"
             ],
             "version": "==2.10"
+        },
+        "igdb-api-v3": {
+            "hashes": [
+                "sha256:3613201b3aea77da52f94e6fc1908697911d86e2d2d82fe757edaecb8dee42cf",
+                "sha256:9ab70d7a8881ecec211ddccea0ef5d8ddef393e648b80df2e3152a829836757d"
+            ],
+            "index": "pypi",
+            "version": "==0.0.2"
         },
         "jikanpy": {
             "hashes": [
