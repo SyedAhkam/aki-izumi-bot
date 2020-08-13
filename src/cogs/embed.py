@@ -42,7 +42,7 @@ class Embed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group(name='embed', invoke_without_command=True, help='A group of commands for making dynamic embeds and saving them for later user.')
+    @commands.group(name='embed', invoke_without_command=True, help='A group of commands for making dynamic embeds and saving them for later use.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
     async def embed(self, ctx):
         commands = self.embed.commands
