@@ -14,13 +14,14 @@ CAT_API_KEY = os.getenv('CAT_API_KEY')
 DOG_API_KEY = os.getenv('DOG_API_KEY')
 IGDB_API_KEY = os.getenv('IGDB_API_KEY')
 
-bot = commands.Bot(command_prefix=['a!', 'A!'], case_insensitive=True)
+# bot = commands.Bot(command_prefix=['a!', 'A!'], case_insensitive=True)
+bot = commands.Bot(command_prefix=['ab!', 'Ab!'], case_insensitive=True)
 
 bot.owner_ids = [342545053169877006, 674432715088592915]
 bot.cat_api_key = CAT_API_KEY
 bot.dog_api_key = DOG_API_KEY
 bot.igdb_api_key = IGDB_API_KEY
-bot.mongo_client = MongoClient(MONGODB_URI)
+bot.db = MongoClient(MONGODB_URI).bot
 
 if __name__ == '__main__':
     # Load the cogs in cogs directory
