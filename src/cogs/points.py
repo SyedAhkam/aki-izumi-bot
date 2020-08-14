@@ -60,6 +60,7 @@ class Points(commands.Cog):
         self.bot = bot
 
     @commands.group(name='points', help='Group of commands to manage the point system for staff.', invoke_without_command=True)
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def points(self, ctx):
         commands = self.points.commands
         command_names = [x.name for x in commands]
@@ -76,10 +77,12 @@ class Points(commands.Cog):
         await ctx.send(embed=embed)
 
     @points.command(name='info', help='Info about the point system.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def info(self, ctx):
         await ctx.send('https://docs.google.com/document/d/1uQ8VhfYfjXs-Ig5KJ2yaM2tP53ss37O74K3ePq3wcK4/edit?usp=sharing')
 
     @points.command(name='register', help='Register a user as staff.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def register(self, ctx, user: commands.MemberConverter = None, *, user_role=None):
         if not user:
             return await ctx.send('Please provide a user.')
@@ -110,6 +113,7 @@ class Points(commands.Cog):
         await ctx.send('All done! Check their profile using the command ``points profile``.')
 
     @points.command(name='unregister', help='Unregister a user as staff.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def unregister(self, ctx, user: commands.MemberConverter = None):
         if not user:
             return await ctx.send('Please provide a user.')
@@ -129,6 +133,7 @@ class Points(commands.Cog):
         await ctx.send(f'All done! Unregistered ``{user.name}`` successfully.')
 
     @points.command(name='profile', help='Check the user\'s profile.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def profile(self, ctx, user: commands.MemberConverter = None):
         if not user:
             return await ctx.send('Please provide a user.')
@@ -157,6 +162,7 @@ class Points(commands.Cog):
         await ctx.send(embed=embed)
 
     @points.command(name='add', help='Add points to a user\'s profile.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def add(self, ctx, user: commands.MemberConverter = None, points=None, *, reason=None):
         if not user:
             return await ctx.send('Please provide a user.')
@@ -183,6 +189,7 @@ class Points(commands.Cog):
         await ctx.send(f'Successfully added ``{points}`` points to ``{user.name}``. Check their current points using the command ``points profile``.')
 
     @points.command(name='remove', help='Remove points from a user\'s profile.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def remove(self, ctx, user: commands.MemberConverter = None, points=None, *, reason=None):
         if not user:
             return await ctx.send('Please provide a user.')
@@ -209,6 +216,7 @@ class Points(commands.Cog):
         await ctx.send(f'Successfully removed ``{points}`` points from ``{user.name}``. Check their current points using the command ``points profile``.')
 
     @points.command(name='history', help='Get history of all the old point modifications for a user.')
+    @commands.has_any_role(709556238463008768, 697877262737080392)
     async def history(self, ctx, user: commands.MemberConverter = None):
         if not user:
             return await ctx.send('Please provide a user.')
