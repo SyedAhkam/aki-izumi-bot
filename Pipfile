@@ -13,6 +13,7 @@ dateparser = "*"
 aiohttp = "*"
 jikanpy = "*"
 igdb-api-v3 = "*"
+ago = "*"
 
 [requires]
 python_version = "3.8"
