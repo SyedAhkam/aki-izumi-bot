@@ -76,6 +76,19 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully set the ``verification_channel_id`` as ``{channel}``')
 
+    @_set.command(name='verified_role', help='Set the role to be given to a user after verification.')
+    @commands.has_permissions(administrator=True)
+    async def verified_role(self, ctx, *, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'verification'},
+            {'$set': {'verified_role_id': role.id}}
+        )
+
+        await ctx.send(f'Successfully set the ``verified_role`` as ``{role.name}``')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
