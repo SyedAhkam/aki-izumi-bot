@@ -200,6 +200,20 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully removed ``{trigger_word}`` from ``auto_react`` list.')
 
+    @remove.command(name='nickname_role', help='Remove a nickname role.')
+    @commands.has_permissions(administrator=True)
+    async def _nickname_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            await ctx.send('Please provide a role.')
+            return
+
+        if is_document_exists(self.nicknames_collection, role.id):
+            return await ctx.send('Doesn\'t exist')
+
+        self.nicknames_collection.delete_one({'_id': role.id})
+
+        await ctx.send(f'Successfully removed ``{role.name}`` from ``nickname_role`` list.')
+
     @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
     @commands.has_permissions(administrator=True)
     async def placeholders(self, ctx):

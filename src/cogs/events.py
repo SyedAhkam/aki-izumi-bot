@@ -35,6 +35,7 @@ class Events(commands.Cog):
         self.blacklisted_collection = bot.db.blacklisted
         self.auto_react_collection = bot.db.auto_react
         self.config_collection = bot.db.config
+        self.nicknames_collection = bot.db.nicknames
 
     async def bot_check(self, ctx):
         if is_document_exists(self.blacklisted_collection, ctx.author.id):
@@ -159,49 +160,29 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-
-        channel = after.guild.get_channel(630244103397048333)
-
         new_roles = [x for x in after.roles if x not in before.roles]
         removed_roles = [x for x in before.roles if x not in after.roles]
-
-        nicknames = read_json('assets/nicknames.json')
-
-        role_before = None
-
-        for role in before.roles:
-            if role.id in nicknames:
-                role_before = role
 
         if len(before.roles) < len(after.roles):
 
             role_id = new_roles[0].id
 
-            if str(role_id) in nicknames:
+            if is_document_exists(self.nicknames_collection, role_id):
+                doc = self.nicknames_collection.find_one({'_id': role_id})
 
-                role = nicknames[str(role_id)]
+                formatted_nickname = format_nickname(
+                    doc['nickname'], {'name': after.name})
 
-                if 'nickname' in role:
-
-                    formatted_nickname = format_nickname(
-                        role['nickname'], {'name': after.name})
-
-                    await after.edit(nick=formatted_nickname)
+                await after.edit(nick=formatted_nickname)
 
         elif len(before.roles) > len(after.roles):
 
             role_id = removed_roles[0].id
 
-            if str(role_id) in nicknames:
+            if is_document_exists(self.nicknames_collection, role_id):
+                doc = self.nicknames_collection.find_one({'_id': role_id})
 
-                role = nicknames[str(role_id)]
-
-                if 'nickname' in role:
-                    await after.edit(nick='')
-
-                    if role_before:
-                        nickname = nicknames[role_before.id]['nickname']
-                        await after.edit(nick=nickname)
+                await after.edit(nick='')
 
 
 def setup(bot):
