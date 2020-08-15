@@ -146,24 +146,8 @@ class OwnerOnly(commands.Cog):
         if user.id in ctx.bot.owner_ids:
             return await ctx.send('Can\'t blacklist the owners.')
 
-        # config_data = read_json('assets/config.json')
-
-        # if user.id in config_data['blacklisted_users']:
-        #     return await ctx.send('User already blacklisted.')
-
         if is_document_exists(self.blacklisted_collection, user.id):
             return await ctx.send('This user is already blacklisted.')
-
-        # with open('assets/config.json') as f:
-        #     data = json.load(f)
-
-        #     data['blacklisted_users'].append(user.id)
-
-        # write_json('assets/config.json', data)
-
-        # for some reason i gotta do this
-        # ctx.bot.unload_extension(f'cogs.events')
-        # ctx.bot.load_extension(f'cogs.events')
 
         self.blacklisted_collection.insert_one({
             '_id': user.id,
@@ -182,24 +166,8 @@ class OwnerOnly(commands.Cog):
             await ctx.send('Please specify a user to unblacklist.')
             return
 
-        # config_data = read_json('assets/config.json')
-
-        # if not user.id in config_data['blacklisted_users']:
-        #     return await ctx.send('User not blacklisted.')
-
         if not is_document_exists(self.blacklisted_collection, user.id):
             return await ctx.send('This user is not blacklisted.')
-
-        # with open('assets/config.json') as f:
-        #     data = json.load(f)
-
-        #     data['blacklisted_users'].remove(user.id)
-
-        # write_json('assets/config.json', data)
-
-        # # for some reason i gotta do this
-        # ctx.bot.unload_extension(f'cogs.events')
-        # ctx.bot.load_extension(f'cogs.events')
 
         self.blacklisted_collection.delete_one({'_id': user.id})
 
