@@ -34,13 +34,9 @@ class Events(commands.Cog):
         self.bot = bot
         self.blacklisted_collection = bot.db.blacklisted
         self.auto_react_collection = bot.db.auto_react
+        self.config_collection = bot.db.config
 
     async def bot_check(self, ctx):
-        # if ctx.author.id in config_data['blacklisted_users']:
-        #     if ctx.message.content.startswith(('a!', 'A!')):
-        #         raise exceptions.UserBlacklisted(ctx)
-        # return True
-
         if is_document_exists(self.blacklisted_collection, ctx.author.id):
             if ctx.message.content.startswith(ctx.prefix):
                 raise exceptions.UserBlacklisted(ctx)
@@ -59,9 +55,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-
-        emojis = read_json('assets/emojis.json')
-
+        # auto_react
         for word in message.content.split():
             if is_document_exists(self.auto_react_collection, word.lower()):
                 emoji_list = self.auto_react_collection.find_one({'_id': word.lower()})[
@@ -80,11 +74,11 @@ class Events(commands.Cog):
                 await message.add_reaction(str(choosen_emoji))
 
         # counting
-        if message.channel.id == 735605047907582084:
+        if message.channel.id == self.config_collection.find_one({'_id': 'counting'})['counting_channel_id']:
 
             ctx = await self.bot.get_context(message)
 
-            if message.author.id in config_data['blacklisted_users']:
+            if is_document_exists(self.blacklisted_collection, ctx.author.id):
                 embed = embeds.error(
                     f'Sorry you\'ve been blacklisted from using this bot. Ask the bot owner to remove you from blacklist.', 'Blacklisted', ctx)
                 await message.channel.send(message.author.mention, embed=embed, delete_after=3)
@@ -95,14 +89,15 @@ class Events(commands.Cog):
                 try:
                     num = int(message.content)
 
-                    counting_data = read_json('assets/counting.json')
-                    last_number = counting_data['last_number']
+                    counting_doc = self.config_collection.find_one(
+                        {'_id': 'counting'})
+                    last_number = counting_doc['last_number']
 
                     # if last_number == num:
                     #     await message.channel.send(f'Wrong number!, Should be {last_number + 1} instead.')
                     #     return
 
-                    if message.author.id == counting_data['last_msg_author_id']:
+                    if message.author.id == counting_doc['last_msg_author_id']:
                         embed = embeds.error(
                             f'Send one message at a time!', 'Error', ctx)
                         # await message.channel.send(f'{message.author.mention}, Send one message at a time!', delete_after=3)
@@ -120,27 +115,28 @@ class Events(commands.Cog):
 
                         await message.channel.send(embed=embed)
 
-                        data_to_be_saved = {
-                            "last_number": 0,
-                            "last_msg_author_id": None,
-                            "chain_count": 0
-                        }
-
-                        write_json('assets/counting.json', data_to_be_saved)
+                        self.config_collection.find_one_and_update(
+                            {'_id': 'counting'},
+                            {'$set': {
+                                'last_number': 0,
+                                'last_msg_author_id': None
+                            }}
+                        )
                         return
 
                     # Everything stays good
 
-                    emoji = self.bot.get_emoji(736091414731030541)
+                    # emoji = self.bot.get_emoji(736091414731030541)
+                    emoji = self.bot.get_emoji(737970174975541248)
                     await message.add_reaction(str(emoji))
 
-                    data_to_be_saved = {
-                        "last_number": num,
-                        "last_msg_author_id": message.author.id,
-                        "chain_count": counting_data['chain_count'] + 1
-                    }
-
-                    write_json('assets/counting.json', data_to_be_saved)
+                    self.config_collection.find_one_and_update(
+                        {'_id': 'counting'},
+                        {'$set': {
+                            'last_number': num,
+                            'last_msg_author_id': message.author.id
+                        }}
+                    )
 
                 except ValueError:
                     return

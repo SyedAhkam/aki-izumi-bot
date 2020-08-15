@@ -74,7 +74,20 @@ class Config(commands.Cog):
             {'$set': {'verification_channel_id': channel.id}}
         )
 
-        await ctx.send(f'Successfully set the ``verification_channel_id`` as ``{channel}``')
+        await ctx.send(f'Successfully set the ``verification_channel_id`` as ``{channel.name}``')
+
+    @_set.command(name='counting_channel', help='Set the channel to be used for counting.')
+    @commands.has_permissions(administrator=True)
+    async def counting_channel(self, ctx, *, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'counting'},
+            {'$set': {'counting_channel_id': channel.id}}
+        )
+
+        await ctx.send(f'Successfully set the ``counting_channel`` as ``{channel.name}``')
 
     @_set.command(name='verified_role', help='Set the role to be given to a user after verification.')
     @commands.has_permissions(administrator=True)
