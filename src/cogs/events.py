@@ -1,21 +1,10 @@
 from discord.ext import commands
 
-import json
 import os
 import random
 import discord
 import embeds
 import exceptions
-
-
-def read_json(filename):
-    with open(filename) as f:
-        return json.load(f)
-
-
-def write_json(filename, data):
-    with open(filename, 'w') as f:
-        json.dump(data, f)
 
 
 def format_nickname(string, data):
@@ -24,9 +13,6 @@ def format_nickname(string, data):
 
 def is_document_exists(collection, id):
     return collection.count_documents({'_id': id}, limit=1)
-
-
-config_data = read_json('assets/config.json')
 
 
 class Events(commands.Cog):
@@ -140,22 +126,24 @@ class Events(commands.Cog):
                     )
 
                 except ValueError:
-                    return
+                    pass
 
-        if message.channel.id == config_data['verification_channel_id']:
-            if message.content == config_data['verification_trigger_word']:
+        # verification
+        verification_doc = self.config_collection.find_one(
+            {'_id': 'verification'})
+        if message.channel.id == verification_doc['verification_channel_id']:
+            if message.content == verification_doc['verification_trigger_word']:
 
                 verified_role = message.guild.get_role(
-                    config_data['verified_role_id'])
+                    verification_doc['verified_role_id'])
 
                 await message.author.add_roles(verified_role)
 
                 ctx = await self.bot.get_context(message)
 
                 embed = embeds.normal(
-                    config_data['verification_followup_message'], 'You\'ve been verified!', ctx)
+                    verification_doc['verification_followup_message'], 'You\'ve been verified!', ctx)
                 await message.channel.send(content=message.author.mention, embed=embed)
-
                 await message.delete()
 
     @commands.Cog.listener()
