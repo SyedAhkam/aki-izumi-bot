@@ -22,16 +22,26 @@ def format_nickname(string, data):
     return string.format(**data)
 
 
+def is_document_exists(collection, id):
+    return collection.count_documents({'_id': id}, limit=1)
+
+
 config_data = read_json('assets/config.json')
 
 
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.blacklisted_collection = bot.db.blacklisted
 
     async def bot_check(self, ctx):
-        if ctx.author.id in config_data['blacklisted_users']:
-            if ctx.message.content.startswith(('a!', 'A!')):
+        # if ctx.author.id in config_data['blacklisted_users']:
+        #     if ctx.message.content.startswith(('a!', 'A!')):
+        #         raise exceptions.UserBlacklisted(ctx)
+        # return True
+
+        if is_document_exists(self.blacklisted_collection, ctx.author.id):
+            if ctx.message.content.startswith(ctx.prefix):
                 raise exceptions.UserBlacklisted(ctx)
         return True
 

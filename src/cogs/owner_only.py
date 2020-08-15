@@ -7,17 +7,12 @@ import json
 import embeds
 
 
-def read_json(filename):
-    with open(filename) as f:
-        return json.load(f)
-
-
-def write_json(filename, data):
-    with open(filename, 'w') as f:
-        json.dump(data, f)
-
+def is_document_exists(collection, id):
+    return collection.count_documents({'_id': id}, limit=1)
 
 # For eval command
+
+
 def insert_returns(body):
     # insert return stmt if the last expression is a expression statement
     if isinstance(body[-1], ast.Expr):
@@ -38,6 +33,7 @@ class OwnerOnly(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.blacklisted_collection = bot.db.blacklisted
 
     @commands.command(name='load', help='Loads a specified category.')
     @commands.is_owner()
@@ -142,7 +138,7 @@ class OwnerOnly(commands.Cog):
 
     @commands.command(name='blacklist', help='Blacklist a user from using the bot commands.')
     @commands.is_owner()
-    async def blacklist(self, ctx, user: commands.UserConverter = None):
+    async def blacklist(self, ctx, user: commands.UserConverter = None, reason=None):
 
         if not user:
             await ctx.send('Please specify a user to blacklist.')
@@ -151,21 +147,29 @@ class OwnerOnly(commands.Cog):
         if user.id in ctx.bot.owner_ids:
             return await ctx.send('Can\'t blacklist the owners.')
 
-        config_data = read_json('assets/config.json')
+        # config_data = read_json('assets/config.json')
 
-        if user.id in config_data['blacklisted_users']:
-            return await ctx.send('User already blacklisted.')
+        # if user.id in config_data['blacklisted_users']:
+        #     return await ctx.send('User already blacklisted.')
 
-        with open('assets/config.json') as f:
-            data = json.load(f)
+        if is_document_exists(self.blacklisted_collection, user.id):
+            return await ctx.send('This user is already blacklisted.')
 
-            data['blacklisted_users'].append(user.id)
+        # with open('assets/config.json') as f:
+        #     data = json.load(f)
 
-        write_json('assets/config.json', data)
+        #     data['blacklisted_users'].append(user.id)
+
+        # write_json('assets/config.json', data)
 
         # for some reason i gotta do this
-        ctx.bot.unload_extension(f'cogs.events')
-        ctx.bot.load_extension(f'cogs.events')
+        # ctx.bot.unload_extension(f'cogs.events')
+        # ctx.bot.load_extension(f'cogs.events')
+
+        self.blacklisted_collection.insert_one({
+            '_id': user.id,
+            'reason': reason if reason else 'No reason provided'
+        })
 
         embed = embeds.normal(
             f'``{user.name}`` has been blacklisted from using the bot. If you ever change your mind just do ``unblacklist`` command.', 'Blacklisted!', ctx)
@@ -179,21 +183,26 @@ class OwnerOnly(commands.Cog):
             await ctx.send('Please specify a user to unblacklist.')
             return
 
-        config_data = read_json('assets/config.json')
+        # config_data = read_json('assets/config.json')
 
-        if not user.id in config_data['blacklisted_users']:
-            return await ctx.send('User not blacklisted.')
+        # if not user.id in config_data['blacklisted_users']:
+        #     return await ctx.send('User not blacklisted.')
 
-        with open('assets/config.json') as f:
-            data = json.load(f)
+        if not is_document_exists(self.blacklisted_collection, user.id):
+            return await ctx.send('This user is not blacklisted.')
 
-            data['blacklisted_users'].remove(user.id)
+        # with open('assets/config.json') as f:
+        #     data = json.load(f)
 
-        write_json('assets/config.json', data)
+        #     data['blacklisted_users'].remove(user.id)
 
-        # for some reason i gotta do this
-        ctx.bot.unload_extension(f'cogs.events')
-        ctx.bot.load_extension(f'cogs.events')
+        # write_json('assets/config.json', data)
+
+        # # for some reason i gotta do this
+        # ctx.bot.unload_extension(f'cogs.events')
+        # ctx.bot.load_extension(f'cogs.events')
+
+        self.blacklisted_collection.delete_one({'_id': user.id})
 
         embed = embeds.normal(
             f'``{user.name}`` has been removed from the bot blacklist.', 'Unblacklisted!', ctx)
