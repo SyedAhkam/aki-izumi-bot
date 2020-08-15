@@ -155,7 +155,7 @@ class Config(commands.Cog):
             'emojis': emojis_to_be_saved
         })
 
-        await ctx.send(f'Successfully added ``{trigger_word}`` to ``auto_react`` list.')
+        await ctx.send(f'Successfully added ``{trigger_word}`` with ``{len(emojis)}`` emojis to ``auto_react`` list.')
 
     @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
     async def remove(self, ctx):
