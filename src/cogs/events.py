@@ -33,6 +33,7 @@ class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.blacklisted_collection = bot.db.blacklisted
+        self.auto_react_collection = bot.db.auto_react
 
     async def bot_check(self, ctx):
         # if ctx.author.id in config_data['blacklisted_users']:
@@ -62,9 +63,9 @@ class Events(commands.Cog):
         emojis = read_json('assets/emojis.json')
 
         for word in message.content.split():
-            if word.lower() in emojis:
-                emoji_list = emojis[word.lower()]['emojis']
-
+            if is_document_exists(self.auto_react_collection, word.lower()):
+                emoji_list = self.auto_react_collection.find_one({'_id': word.lower()})[
+                    'emojis']
                 emoji_object_list = []
 
                 for emoji in emoji_list:

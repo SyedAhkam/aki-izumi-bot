@@ -151,7 +151,7 @@ class Config(commands.Cog):
                 emojis_to_be_saved.append(emoji.id)
 
         self.auto_react_collection.insert_one({
-            '_id': trigger_word,
+            '_id': trigger_word.lower(),
             'emojis': emojis_to_be_saved
         })
 
