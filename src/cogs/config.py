@@ -175,7 +175,7 @@ class Config(commands.Cog):
 
     @remove.command(name='auto_react', help='Stop a trigger word from triggering anymore in auto react system.')
     @commands.has_permissions(administrator=True)
-    async def auto_react(self, ctx, trigger_word=None):
+    async def _auto_react(self, ctx, trigger_word=None):
         if not trigger_word:
             await ctx.send('Please provide a trigger_word.')
             return
