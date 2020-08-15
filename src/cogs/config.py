@@ -112,7 +112,7 @@ class Config(commands.Cog):
             'nickname': nickname
         })
 
-        await ctx.send('Done!')
+        await ctx.send(f'Successfully added ``{role.name}`` to ``nickname_role`` list.')
 
     @add.command(name='auto_react', help='Add emojis to be reacted by the bot if a user sends the trigger word.')
     @commands.has_permissions(administrator=True)
@@ -142,7 +142,7 @@ class Config(commands.Cog):
             'emojis': emojis_to_be_saved
         })
 
-        await ctx.send('Done!')
+        await ctx.send(f'Successfully added ``{trigger_word}`` to ``auto_react`` list.')
 
     @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
     async def remove(self, ctx):
@@ -172,7 +172,7 @@ class Config(commands.Cog):
 
         self.auto_react_collection.delete_one({'_id': trigger_word})
 
-        await ctx.send('Done!')
+        await ctx.send(f'Successfully removed ``{trigger_word}`` from ``auto_react`` list.')
 
     @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
     @commands.has_permissions(administrator=True)
