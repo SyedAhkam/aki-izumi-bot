@@ -3,7 +3,6 @@ from discord.ext import commands
 import discord
 import os
 import ast
-import json
 import embeds
 
 
