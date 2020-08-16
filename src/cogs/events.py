@@ -1,6 +1,5 @@
 from discord.ext import commands
 
-import json
 import os
 import random
 import discord
@@ -8,30 +7,25 @@ import embeds
 import exceptions
 
 
-def read_json(filename):
-    with open(filename) as f:
-        return json.load(f)
-
-
-def write_json(filename, data):
-    with open(filename, 'w') as f:
-        json.dump(data, f)
-
-
 def format_nickname(string, data):
     return string.format(**data)
 
 
-config_data = read_json('assets/config.json')
+def is_document_exists(collection, id):
+    return collection.count_documents({'_id': id}, limit=1)
 
 
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.blacklisted_collection = bot.db.blacklisted
+        self.auto_react_collection = bot.db.auto_react
+        self.config_collection = bot.db.config
+        self.nicknames_collection = bot.db.nicknames
 
     async def bot_check(self, ctx):
-        if ctx.author.id in config_data['blacklisted_users']:
-            if ctx.message.content.startswith(('a!', 'A!')):
+        if is_document_exists(self.blacklisted_collection, ctx.author.id):
+            if ctx.message.content.startswith(ctx.prefix):
                 raise exceptions.UserBlacklisted(ctx)
         return True
 
@@ -48,13 +42,11 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-
-        emojis = read_json('assets/emojis.json')
-
+        # auto_react
         for word in message.content.split():
-            if word.lower() in emojis:
-                emoji_list = emojis[word.lower()]['emojis']
-
+            if is_document_exists(self.auto_react_collection, word.lower()):
+                emoji_list = self.auto_react_collection.find_one({'_id': word.lower()})[
+                    'emojis']
                 emoji_object_list = []
 
                 for emoji in emoji_list:
@@ -69,11 +61,11 @@ class Events(commands.Cog):
                 await message.add_reaction(str(choosen_emoji))
 
         # counting
-        if message.channel.id == 735605047907582084:
+        if message.channel.id == self.config_collection.find_one({'_id': 'counting'})['counting_channel_id']:
 
             ctx = await self.bot.get_context(message)
 
-            if message.author.id in config_data['blacklisted_users']:
+            if is_document_exists(self.blacklisted_collection, ctx.author.id):
                 embed = embeds.error(
                     f'Sorry you\'ve been blacklisted from using this bot. Ask the bot owner to remove you from blacklist.', 'Blacklisted', ctx)
                 await message.channel.send(message.author.mention, embed=embed, delete_after=3)
@@ -84,14 +76,15 @@ class Events(commands.Cog):
                 try:
                     num = int(message.content)
 
-                    counting_data = read_json('assets/counting.json')
-                    last_number = counting_data['last_number']
+                    counting_doc = self.config_collection.find_one(
+                        {'_id': 'counting'})
+                    last_number = counting_doc['last_number']
 
                     # if last_number == num:
                     #     await message.channel.send(f'Wrong number!, Should be {last_number + 1} instead.')
                     #     return
 
-                    if message.author.id == counting_data['last_msg_author_id']:
+                    if message.author.id == counting_doc['last_msg_author_id']:
                         embed = embeds.error(
                             f'Send one message at a time!', 'Error', ctx)
                         # await message.channel.send(f'{message.author.mention}, Send one message at a time!', delete_after=3)
@@ -109,13 +102,13 @@ class Events(commands.Cog):
 
                         await message.channel.send(embed=embed)
 
-                        data_to_be_saved = {
-                            "last_number": 0,
-                            "last_msg_author_id": None,
-                            "chain_count": 0
-                        }
-
-                        write_json('assets/counting.json', data_to_be_saved)
+                        self.config_collection.find_one_and_update(
+                            {'_id': 'counting'},
+                            {'$set': {
+                                'last_number': 0,
+                                'last_msg_author_id': None
+                            }}
+                        )
                         return
 
                     # Everything stays good
@@ -123,78 +116,60 @@ class Events(commands.Cog):
                     emoji = self.bot.get_emoji(736091414731030541)
                     await message.add_reaction(str(emoji))
 
-                    data_to_be_saved = {
-                        "last_number": num,
-                        "last_msg_author_id": message.author.id,
-                        "chain_count": counting_data['chain_count'] + 1
-                    }
-
-                    write_json('assets/counting.json', data_to_be_saved)
+                    self.config_collection.find_one_and_update(
+                        {'_id': 'counting'},
+                        {'$set': {
+                            'last_number': num,
+                            'last_msg_author_id': message.author.id
+                        }}
+                    )
 
                 except ValueError:
-                    return
+                    pass
 
-        if message.channel.id == config_data['verification_channel_id']:
-            if message.content == config_data['verification_trigger_word']:
+        # verification
+        verification_doc = self.config_collection.find_one(
+            {'_id': 'verification'})
+        if message.channel.id == verification_doc['verification_channel_id']:
+            if message.content == verification_doc['verification_trigger_word']:
 
                 verified_role = message.guild.get_role(
-                    config_data['verified_role_id'])
+                    verification_doc['verified_role_id'])
 
                 await message.author.add_roles(verified_role)
 
                 ctx = await self.bot.get_context(message)
 
                 embed = embeds.normal(
-                    config_data['verification_followup_message'], 'You\'ve been verified!', ctx)
+                    verification_doc['verification_followup_message'], 'You\'ve been verified!', ctx)
                 await message.channel.send(content=message.author.mention, embed=embed)
-
                 await message.delete()
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-
-        channel = after.guild.get_channel(630244103397048333)
-
         new_roles = [x for x in after.roles if x not in before.roles]
         removed_roles = [x for x in before.roles if x not in after.roles]
-
-        nicknames = read_json('assets/nicknames.json')
-
-        role_before = None
-
-        for role in before.roles:
-            if role.id in nicknames:
-                role_before = role
 
         if len(before.roles) < len(after.roles):
 
             role_id = new_roles[0].id
 
-            if str(role_id) in nicknames:
+            if is_document_exists(self.nicknames_collection, role_id):
+                doc = self.nicknames_collection.find_one({'_id': role_id})
 
-                role = nicknames[str(role_id)]
+                formatted_nickname = format_nickname(
+                    doc['nickname'], {'name': after.name})
 
-                if 'nickname' in role:
-
-                    formatted_nickname = format_nickname(
-                        role['nickname'], {'name': after.name})
-
-                    await after.edit(nick=formatted_nickname)
+                await after.edit(nick=formatted_nickname)
 
         elif len(before.roles) > len(after.roles):
 
             role_id = removed_roles[0].id
 
-            if str(role_id) in nicknames:
+            if is_document_exists(self.nicknames_collection, role_id):
+                doc = self.nicknames_collection.find_one({'_id': role_id})
 
-                role = nicknames[str(role_id)]
-
-                if 'nickname' in role:
-                    await after.edit(nick='')
-
-                    if role_before:
-                        nickname = nicknames[role_before.id]['nickname']
-                        await after.edit(nick=nickname)
+                await after.edit(nick='')
 
 
 def setup(bot):

@@ -1,23 +1,37 @@
 from discord.ext import commands
+from discord.ext.menus import MenuPages, ListPageSource
+from ago import human
 
-import asyncio
-import datetime
 import embeds
-import json
-import discord
+import datetime
 import dateparser
+import re
+import discord
 
+# TODO: Allow {embed: <embed_name>} keys in other commands
+
+url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 color_converter = commands.ColourConverter()
 
 
-def read_json(filename):
-    with open(filename) as f:
-        return json.load(f)
+def is_document_exists(collection, id):
+    return collection.count_documents({'_id': id}, limit=1)
 
 
-def write_json(filename, data):
-    with open(filename, 'w') as f:
-        json.dump(data, f)
+async def convert_color(ctx, color):
+    try:
+        if color.lower() == 'default':
+            return await color_converter.convert(ctx, '#b5fffd')
+        return await color_converter.convert(ctx, color)
+    except commands.BadArgument:
+        return None
+
+
+async def parse_datetime(string):
+    try:
+        return dateparser.parse(string, settings={'TO_TIMEZONE': 'UTC'})
+    except ValueError:
+        return None
 
 
 def get_keys(user, guild):
@@ -38,9 +52,73 @@ def format_string_with_keys(string, keys):
     return string.format(**keys)
 
 
+async def format_embed(user, guild, embed):
+    keys = get_keys(user, guild)
+
+    if not embed.title == discord.Embed.Empty:
+        embed.title = format_string_with_keys(embed.title, keys)
+
+    if not embed.description == discord.Embed.Empty:
+        embed.description = format_string_with_keys(embed.description, keys)
+
+    if not embed.footer == discord.Embed.Empty:
+        footer_text = format_string_with_keys(embed.footer.text, keys)
+        embed.set_footer(text=footer_text, icon_url=embed.footer.icon_url)
+
+    if not embed.author == discord.Embed.Empty:
+        author_name = format_string_with_keys(embed.author.name, keys)
+        embed.set_author(name=author_name, url=embed.author.url,
+                         icon_url=embed.author.icon_url)
+
+    if not embed.fields == discord.Embed.Empty:
+        new_fields = []
+        for field in embed.fields:
+            formatted_field_name = format_string_with_keys(field.name, keys)
+            formatted_field_value = format_string_with_keys(field.value, keys)
+            new_fields.append((formatted_field_name, formatted_field_value))
+
+        embed.clear_fields()
+
+        for name, value in new_fields:
+            embed.add_field(name=name, value=value)
+
+    return embed
+
+
+class EmbedListMenu(ListPageSource):
+    def __init__(self, ctx, data):
+        self.ctx = ctx
+        super().__init__(data, per_page=4)
+
+    async def write_page(self, menu, embeds_list):
+        menu_embed = embeds.normal_no_description('Embed List', self.ctx)
+
+        for embed in embeds_list:
+            embed_field = embed['embed']
+            humanized_created_at = human(embed['created_at'])
+            field_value = f'''
+                **Type:** ``{embed_field['type']}``
+                **Fields:** ``{len(embed_field['fields']) if 'fields' in embed_field else 'None'}``
+                **Color:** ``{embed_field['color'] if 'color' in embed_field else 'None'}``
+                **Created_at:** ``{humanized_created_at}``
+            '''
+            menu_embed.add_field(
+                name=embed['_id'], value=field_value, inline=False)
+
+        return menu_embed
+
+    async def format_page(self, menu, entries):
+        embeds_list = []
+
+        for entry in entries:
+            embeds_list.append((entry))
+        return await self.write_page(menu, embeds_list)
+
+
 class Embed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.embeds_collection = bot.db.embeds
 
     @commands.group(name='embed', invoke_without_command=True, help='A group of commands for making dynamic embeds and saving them for later use.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -65,90 +143,19 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide a name for embed.')
 
-        embed_data = read_json('assets/embeds.json')
-        if name in embed_data:
+        if is_document_exists(self.embeds_collection, name):
             return await ctx.send('Embed name already exists, Choose a different name.')
 
-        def check(msg):
-            return msg.author == ctx.message.author and msg.channel == ctx.message.channel
+        embed = embeds.blank_no_color()
+        embed_raw = embed.to_dict()
 
-        keys = get_keys(ctx.author, ctx.guild)
+        self.embeds_collection.insert_one({
+            '_id': name,
+            'embed': embed_raw,
+            'created_at': datetime.datetime.now().timestamp()
+        })
 
-        try:
-            await ctx.send('What color do you want it to be? (Default: #b5fffd)')
-            msg = await ctx.bot.wait_for('message', check=check, timeout=30.0)
-            try:
-                color = await color_converter.convert(ctx, msg.content)
-            except commands.BadArgument:
-                if msg.content == 'None':
-                    color = '#b5fffd'
-                elif msg.content == '{user_color}':
-                    try:
-                        color = format_string_with_keys(
-                            msg.content, {"user_color": msg.author.color})
-                    except KeyError:
-                        await ctx.send('Unknown key detected. Please try again.')
-                        return
-                else:
-                    await ctx.send('The color provided by you is invalid. Exiting..')
-                    return
-            await ctx.send(f'Color selected: ```{color}```')
-
-            await ctx.send('Do you want it to have a title? (Say ``None`` if not)')
-            msg = await ctx.bot.wait_for('message', check=check, timeout=30.0)
-            title = None if msg.content == 'None' else msg.content
-            if title:
-                try:
-                    title = format_string_with_keys(msg.content, keys)
-                except KeyError:
-                    await ctx.send('Unknown key detected. Please try again.')
-                    return
-            await ctx.send(f'Title selected: ```{title}```')
-
-            await ctx.send('Do you want it to have a url? (Say ``None`` if not)')
-            msg = await ctx.bot.wait_for('message', check=check, timeout=30.0)
-            url = None if msg.content == 'None' else msg.content
-            await ctx.send(f'URL selected: ```{url}```')
-
-            await ctx.send('Do you want it to have a timestamp? (Say ``None`` if not)')
-            msg = await ctx.bot.wait_for('message', check=check, timeout=30.0)
-            timestamp = None if msg.content == 'None' else datetime.datetime.utcnow()
-            await ctx.send(f'Timestamp selected: ```{timestamp}```')
-
-            await ctx.send('Do you want it to have a description? (Say ``None`` if not)')
-            msg = await ctx.bot.wait_for('message', check=check, timeout=30.0)
-            description = None if msg.content == 'None' else msg.content
-            if description:
-                try:
-                    description = format_string_with_keys(msg.content, keys)
-                except KeyError:
-                    await ctx.send('Unknown key detected. Please try again.')
-                    return
-            await ctx.send(f'Description selected: ```{description}```')
-
-            progress = await ctx.send('Generating embed...')
-
-            embed = embeds.custom(title, color, description, timestamp, url)
-
-            await progress.edit(content='Done!')
-
-            await progress.edit(content='Saving for later use...')
-
-            with open('assets/embeds.json') as f:
-                data = json.load(f)
-
-                temp = data
-
-                data = {}
-                data[name] = embed.to_dict()
-
-                temp.update(data)
-            write_json('assets/embeds.json', temp)
-
-            await progress.edit(content='All done, Preview your embed by using ``embed preview`` command!')
-
-        except asyncio.TimeoutError:
-            await ctx.send('Timed out, Please try again later.')
+        await ctx.send('All done, Preview your embed by using ``embed preview`` command!')
 
     @embed.command(name='preview', help='Preview an embed created already.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -156,18 +163,34 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide an embed name.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        msg = await ctx.send('Just a sec...')
+        embed_doc = self.embeds_collection.find_one({'_id': name})
 
-        embed_raw = embed_data[name]
+        embed = embeds.get_embed_from_dict(embed_doc['embed'])
 
-        embed = embeds.get_embed_from_dict(embed_raw)
+        try:
+            formatted_embed = await format_embed(ctx.author, ctx.guild, embed)
+        except KeyError:
+            return await ctx.send('Unknown key detected. Please fix it.')
 
-        await msg.edit(content="Here is your embed:", embed=embed)
+        await ctx.send(content="Here is your embed:", embed=formatted_embed)
+
+    @embed.command(name='list', help='List all the previously made embeds.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def _list(self, ctx):
+        all_embeds = list(self.embeds_collection.find({}))
+
+        if not all_embeds:
+            return await ctx.send('No embeds found, Create one using ``embed new`` command.')
+
+        menu = MenuPages(
+            source=EmbedListMenu(ctx, all_embeds),
+            clear_reactions_after=True,
+            timeout=60.0
+        )
+        await menu.start(ctx)
 
     @embed.group(name='edit', invoke_without_command=True, help='A group of commands used to edit an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -186,204 +209,6 @@ class Embed(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @edit.command(name='footer', help='Edit the footer of an embed.')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def footer(self, ctx, name=None, text=None, icon_url=None):
-        if not name:
-            return await ctx.send('Please provide the name of embed which you want to edit.')
-        if not text:
-            return await ctx.send('Text is a required field which you\'re missing.')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
-            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
-
-        progress = await ctx.send('Working on it...')
-
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
-
-        try:
-            text = format_string_with_keys(text, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
-
-        if icon_url:
-            try:
-                icon_url = format_string_with_keys(icon_url, keys)
-            except KeyError:
-                await ctx.send('Unknown key detected. Please try again.')
-                return
-        else:
-            icon_url = discord.Embed.Empty
-
-        embed = embeds.get_embed_from_dict(embed_raw)
-        embed.set_footer(text=text, icon_url=icon_url)
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
-
-    @edit.command(name='image', help='Edit the image of an embed.')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def image(self, ctx, name=None, image_url=None):
-        if not name:
-            return await ctx.send('Please provide the name of embed which you want to edit.')
-        if not image_url:
-            return await ctx.send('Image url is a required field which you\'re missing.')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
-            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
-
-        progress = await ctx.send('Working on it...')
-
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
-
-        embed = embeds.get_embed_from_dict(embed_raw)
-
-        try:
-            image_url = format_string_with_keys(image_url, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
-
-        embed.set_image(url=image_url)
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
-
-    @edit.command(name='thumbnail', help='Edit the thumbnail of an embed.')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def thumbnail(self, ctx, name=None, thumbnail_url=None):
-        if not name:
-            return await ctx.send('Please provide the name of embed which you want to edit.')
-        if not thumbnail_url:
-            return await ctx.send('Thumbnail url is a required field which you\'re missing.')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
-            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
-
-        progress = await ctx.send('Working on it...')
-
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
-
-        embed = embeds.get_embed_from_dict(embed_raw)
-
-        try:
-            thumbnail_url = format_string_with_keys(thumbnail_url, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
-
-        embed.set_thumbnail(url=thumbnail_url)
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
-
-    @edit.command(name='author', help='Edit the author of an embed.')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def author(self, ctx, name=None, author_name=None, icon_url=None, author_url=None):
-        if not name:
-            return await ctx.send('Please provide the name of embed which you want to edit.')
-        if not author_name:
-            return await ctx.send('Author name is a required field which you\'re missing.')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
-            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
-
-        progress = await ctx.send('Working on it...')
-
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
-
-        embed = embeds.get_embed_from_dict(embed_raw)
-
-        try:
-            author_name = format_string_with_keys(author_name, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
-
-        if icon_url:
-            try:
-                icon_url = format_string_with_keys(icon_url, keys)
-            except KeyError:
-                await ctx.send('Unknown key detected. Please try again.')
-                return
-        else:
-            icon_url = discord.Embed.Empty
-
-        if author_url:
-            try:
-                author_url = format_string_with_keys(author_url, keys)
-            except KeyError:
-                await ctx.send('Unknown key detected. Please try again.')
-                return
-        else:
-            icon_url = discord.Embed.Empty
-
-        embed.set_author(name=author_name, url=author_url, icon_url=icon_url)
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
-
     @edit.command(name='title', help='Edit the title of an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
     async def title(self, ctx, name=None, *, new_title=None):
@@ -392,40 +217,26 @@ class Embed(commands.Cog):
         if not new_title:
             return await ctx.send('New title is a required field which you\'re missing.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        progress = await ctx.send('Working on it...')
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
 
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
+        new_embed = embeds.get_embed_from_dict(embed_raw)
 
-        embed = embeds.get_embed_from_dict(embed_raw)
+        if new_title.lower() == 'none':
+            new_embed.title = discord.Embed.Empty
+        else:
+            new_embed.title = new_title
 
-        try:
-            new_title = format_string_with_keys(new_title, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
+        new_embed_raw = new_embed.to_dict()
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
 
-        embed.title = new_title
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
+        await ctx.send(f'Successfully set the embed title as ```{new_title}```')
 
     @edit.command(name='description', help='Edit the description of an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -435,128 +246,26 @@ class Embed(commands.Cog):
         if not new_description:
             return await ctx.send('New description is a required field which you\'re missing.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        progress = await ctx.send('Working on it...')
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
 
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
+        new_embed = embeds.get_embed_from_dict(embed_raw)
 
-        embed = embeds.get_embed_from_dict(embed_raw)
+        if new_description.lower() == 'none':
+            new_embed.description = discord.Embed.Empty
+        else:
+            new_embed.description = new_description
 
-        try:
-            new_description = format_string_with_keys(new_description, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
+        new_embed_raw = new_embed.to_dict()
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
 
-        embed.description = new_description
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
-
-    @edit.command(name='url', help='Edit the url of an embed.')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def url(self, ctx, name=None, *, new_url=None):
-        if not name:
-            return await ctx.send('Please provide the name of embed which you want to edit.')
-        if not new_url:
-            return await ctx.send('New url is a required field which you\'re missing.')
-
-        embed_data = read_json('assets/embeds.json')
-        keys = get_keys(ctx.author, ctx.guild)
-
-        if not name in embed_data:
-            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
-
-        progress = await ctx.send('Working on it...')
-
-        embed_raw = embed_data[name]
-
-        embed = embeds.get_embed_from_dict(embed_raw)
-
-        try:
-            new_url = format_string_with_keys(new_url, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
-
-        embed.url = new_url
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
-
-    @edit.command(name='timestamp', help='Edit the timestamp of an embed.')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def timestamp(self, ctx, name=None, *, new_timestamp=None):
-        if not name:
-            return await ctx.send('Please provide the name of embed which you want to edit.')
-        if not new_timestamp:
-            return await ctx.send('New timestamp is a required field which you\'re missing.')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
-            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
-
-        progress = await ctx.send('Working on it...')
-
-        embed_raw = embed_data[name]
-
-        embed = embeds.get_embed_from_dict(embed_raw)
-
-        try:
-            parsed_datetime = dateparser.parse(
-                new_timestamp, settings={'TO_TIMEZONE': 'UTC'})
-
-            if not parsed_datetime:
-                return await ctx.send('Your timestamp is invalid. Exiting...')
-        except ValueError:
-            return await ctx.send('Your timestamp is invalid. Exiting...')
-
-        embed.timestamp = parsed_datetime
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
+        await ctx.send(f'Successfully set the embed description as ```{new_description}```')
 
     @edit.command(name='color', help='Edit the color of an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -566,53 +275,225 @@ class Embed(commands.Cog):
         if not new_color:
             return await ctx.send('New color is a required field which you\'re missing.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        progress = await ctx.send('Working on it...')
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
 
-        embed_raw = embed_data[name]
+        new_embed = embeds.get_embed_from_dict(embed_raw)
 
-        embed = embeds.get_embed_from_dict(embed_raw)
+        if new_color.lower() == 'none':
+            new_embed.color = discord.Embed.Empty
+        else:
+            converted_color = await convert_color(ctx, new_color)
+            if not converted_color:
+                return await ctx.send('The color provided by you is invalid.')
 
-        try:
-            if new_color.lower() == 'default':
-                converted_color = '#b5fffd'
-            elif new_color == '{user_color}':
-                converted_color = ctx.author.color
-            else:
-                converted_color = await color_converter.convert(ctx, new_color)
-        except commands.BadArgument:
-            await ctx.send('The color provided by you is invalid. Exiting..')
-            return
+            new_embed.color = converted_color
 
-        converted_hex_color = None
+        new_embed_raw = new_embed.to_dict()
 
-        try:
-            if not converted_color.startswith('0x'):
-                converted_hex_color = int('0x' + converted_color[1:], 16)
-                embed.color = converted_hex_color
-            else:
-                embed.color = converted_color
-        except AttributeError:
-            embed.color = converted_color
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
 
-        await progress.edit(content='Saving updated embed...')
+        await ctx.send(f'Successfully set the embed color as ```{new_color}```')
 
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
+    @edit.command(name='timestamp', help='Edit the timestamp of an embed.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def timestamp(self, ctx, name=None, *, new_timestamp=None):
+        if not name:
+            return await ctx.send('Please provide the name of embed which you want to edit.')
+        if not new_timestamp:
+            return await ctx.send('New timestamp is a required field which you\'re missing.')
 
-            temp = data
+        if not is_document_exists(self.embeds_collection, name):
+            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-            data = {}
-            data[name] = embed.to_dict()
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+        new_embed = embeds.get_embed_from_dict(embed_raw)
 
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
+        if new_timestamp.lower() == 'none':
+            new_embed.timestamp = discord.Embed.Empty
+        else:
+            parsed_datetime = await parse_datetime(new_timestamp)
 
-        await progress.edit(content='All done!')
+            if not parsed_datetime:
+                return await ctx.send('Invalid timestamp')
+
+            new_embed.timestamp = parsed_datetime
+
+        new_embed_raw = new_embed.to_dict()
+
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
+
+        await ctx.send(f'Successfully set the embed timestamp as ```{new_timestamp}```')
+
+    @edit.command(name='url', help='Edit the url of an embed.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def url(self, ctx, name=None, *, new_url=None):
+        if not name:
+            return await ctx.send('Please provide the name of embed which you want to edit.')
+        if not new_url:
+            return await ctx.send('New url is a required field which you\'re missing.')
+
+        if not is_document_exists(self.embeds_collection, name):
+            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
+
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+
+        if new_url.lower() == 'none':
+            new_embed.url = discord.Embed.Empty
+        else:
+            if not re.search(url_regex, new_url):
+                return await ctx.send('URL is invalid.')
+
+            new_embed.url = new_url
+
+        new_embed_raw = new_embed.to_dict()
+
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
+
+        await ctx.send(f'Successfully set the embed url as ```{new_url}```')
+
+    @edit.command(name='footer', help='Edit the footer of an embed.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def footer(self, ctx, name=None, text=None, icon_url=None):
+        if not name:
+            return await ctx.send('Please provide the name of embed which you want to edit.')
+        if not text:
+            return await ctx.send('Text is a required field which you\'re missing.')
+
+        if not icon_url:
+            icon_url = discord.Embed.Empty
+
+        if not is_document_exists(self.embeds_collection, name):
+            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
+
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+
+        if text.lower() == 'none':
+            text == discord.Embed.Empty
+
+        new_embed.set_footer(text=text, icon_url=icon_url)
+
+        new_embed_raw = new_embed.to_dict()
+
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
+
+        await ctx.send(f'Successfully set the embed footer as ```{text}```')
+
+    @edit.command(name='image', help='Edit the image of an embed.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def image(self, ctx, name=None, image_url=None):
+        if not name:
+            return await ctx.send('Please provide the name of embed which you want to edit.')
+        if not image_url:
+            return await ctx.send('Image url is a required field which you\'re missing.')
+
+        if not is_document_exists(self.embeds_collection, name):
+            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
+
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+
+        if image_url.lower() == 'none':
+            image_url = discord.Embed.Empty
+
+        new_embed.set_image(url=image_url)
+
+        new_embed_raw = new_embed.to_dict()
+
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
+
+        await ctx.send(f'Successfully set the embed image as ```{image_url}```')
+
+    @edit.command(name='thumbnail', help='Edit the thumbnail of an embed.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def thumbnail(self, ctx, name=None, thumbnail_url=None):
+        if not name:
+            return await ctx.send('Please provide the name of embed which you want to edit.')
+        if not thumbnail_url:
+            return await ctx.send('Thumbnail url is a required field which you\'re missing.')
+
+        if not is_document_exists(self.embeds_collection, name):
+            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
+
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+
+        if thumbnail_url.lower() == 'none':
+            thumbnail_url = discord.Embed.Empty
+
+        new_embed.set_thumbnail(url=thumbnail_url)
+
+        new_embed_raw = new_embed.to_dict()
+
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
+
+        await ctx.send(f'Successfully set the embed thumbnail as ```{thumbnail_url}```')
+
+    @edit.command(name='author', help='Edit the author of an embed.')
+    @commands.has_any_role(697877262737080392, 709556238463008768)
+    async def author(self, ctx, name=None, author_name=None, icon_url=None, author_url=None):
+        if not name:
+            return await ctx.send('Please provide the name of embed which you want to edit.')
+        if not author_name:
+            return await ctx.send('Author name is a required field which you\'re missing.')
+        if not icon_url:
+            icon_url = discord.Embed.Empty
+        if not author_url:
+            author_url = discord.Embed.Empty
+
+        if not is_document_exists(self.embeds_collection, name):
+            return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
+
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+
+        if author_name.lower() == 'none':
+            new_embed.remove_author()
+        else:
+            new_embed.set_author(
+                name=author_name, url=author_url, icon_url=icon_url)
+
+        new_embed_raw = new_embed.to_dict()
+
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
+
+        await ctx.send(f'Successfully set the embed author as ```{author_name}```')
 
     @embed.group(name='field', invoke_without_command=True, help='Group of commands for adding fields in an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -646,64 +527,42 @@ class Embed(commands.Cog):
         else:
             is_inline = is_inline.lower() == "true"
 
-        progress = await ctx.send('Working on it...')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_raw = embed_data[name]
-        keys = get_keys(ctx.author, ctx.guild)
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
 
-        embed = embeds.get_embed_from_dict(embed_raw)
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+        new_embed.add_field(
+            name=field_name, value=field_value, inline=is_inline)
 
-        try:
-            field_name = format_string_with_keys(field_name, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
+        new_embed_raw = new_embed.to_dict()
 
-        try:
-            field_value = format_string_with_keys(field_value, keys)
-        except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
 
-        embed.add_field(name=field_name, value=field_value, inline=is_inline)
-
-        await progress.edit(content='Saving updated embed...')
-
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
+        await ctx.send(f'Successfully added a field with name and value```{field_name}\n{field_value}```')
 
     @field.command(name='remove', help='Remove a field from an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def remove(self, ctx, name=None, field_name=None):
+    async def remove(self, ctx, name=None, *, field_name=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
         if not field_name:
             return await ctx.send('Field name is a required field which you\'re missing.')
 
-        progress = await ctx.send('Working on it...')
-
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        fields = embed_data[name]['fields']
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
 
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+
+        fields = embed_raw['fields']
         field_exists = [x for x in fields if x['name'] == field_name]
 
         if not field_exists:
@@ -711,25 +570,16 @@ class Embed(commands.Cog):
 
         index_of_field = fields.index(field_exists[0])
 
-        embed_raw = embed_data[name]
+        new_embed.remove_field(index_of_field)
 
-        embed = embeds.get_embed_from_dict(embed_raw)
-        embed.remove_field(index_of_field)
+        new_embed_raw = new_embed.to_dict()
 
-        await progress.edit(content='Saving updated embed...')
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
 
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
+        await ctx.send(f'Successfully removed field with name```{field_name}```')
 
     @field.command(name='clear_all', help='Clear all the fields from an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -737,32 +587,23 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        progress = await ctx.send('Working on it...')
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
 
-        embed_raw = embed_data[name]
-        embed = embeds.get_embed_from_dict(embed_raw)
+        new_embed = embeds.get_embed_from_dict(embed_raw)
+        new_embed.clear_fields()
 
-        embed.clear_fields()
+        new_embed_raw = new_embed.to_dict()
 
-        await progress.edit(content='Saving updated embed...')
+        self.embeds_collection.find_one_and_update(
+            {'_id': name},
+            {'$set': {'embed': new_embed_raw}}
+        )
 
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[name] = embed.to_dict()
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
+        await ctx.send(f'Successfully cleared all embed fields.')
 
     @embed.command(name='delete', help='Delete an embed.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -770,25 +611,12 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        progress = await ctx.send('Working on it...')
+        self.embeds_collection.delete_one({'_id': name})
 
-        with open('assets/embeds.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            del temp[name]
-
-            temp.update(data)
-        write_json('assets/embeds.json', temp)
-
-        await progress.edit(content='All done!')
+        await ctx.send(f'Successfully deleted the embed with name {name}')
 
     @embed.command(name='send_here', help='Send an embed in the same channel.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -796,16 +624,21 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to send.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_raw = embed_data[name]
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+
         embed = embeds.get_embed_from_dict(embed_raw)
 
+        try:
+            formatted_embed = await format_embed(ctx.author, ctx.guild, embed)
+        except KeyError:
+            return await ctx.send('Unknown key detected. Please fix it.')
+
+        await ctx.send(embed=formatted_embed)
         await ctx.message.delete()
-        await ctx.send(embed=embed)
 
     @embed.command(name='send_in', help='Send an embed in the specified channel.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
@@ -815,29 +648,21 @@ class Embed(commands.Cog):
         if not channel:
             return await ctx.send('Please provide a channel.')
 
-        embed_data = read_json('assets/embeds.json')
-
-        if not name in embed_data:
+        if not is_document_exists(self.embeds_collection, name):
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_raw = embed_data[name]
+        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_raw = embed_doc['embed']
+
         embed = embeds.get_embed_from_dict(embed_raw)
 
-        await ctx.message.delete()
-        await channel.send(embed=embed)
-
-    @embed.command(name='test')
-    @commands.has_any_role(697877262737080392, 709556238463008768)
-    async def test(self, ctx, *, text):
-        keys = get_keys(ctx.author, ctx.guild)
-
         try:
-            formatted = format_string_with_keys(text, keys)
+            formatted_embed = await format_embed(ctx.author, ctx.guild, embed)
         except KeyError:
-            await ctx.send('Unknown key detected. Please try again.')
-            return
+            return await ctx.send('Unknown key detected. Please fix it.')
 
-        await ctx.send(formatted)
+        await channel.send(embed=formatted_embed)
+        await ctx.message.delete()
 
 
 def setup(bot):

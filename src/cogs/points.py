@@ -3,26 +3,11 @@ from discord.ext.menus import MenuPages, ListPageSource
 from ago import human
 
 import embeds
-import json
 import datetime
 
 
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, datetime.datetime):
-            return o.isoformat()
-
-        return json.JSONEncoder.default(self, o)
-
-
-def read_json(filename):
-    with open(filename) as f:
-        return json.load(f)
-
-
-def write_json(filename, data):
-    with open(filename, 'w') as f:
-        json.dump(data, f, cls=DateTimeEncoder)
+def is_document_exists(collection, id):
+    return collection.count_documents({'_id': id}, limit=1)
 
 
 class HistoryMenu(ListPageSource):
@@ -58,6 +43,7 @@ class Points(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.staff_collection = bot.db.staff
 
     @commands.group(name='points', help='Group of commands to manage the point system for staff.', invoke_without_command=True)
     @commands.has_any_role(709556238463008768, 697877262737080392)
@@ -90,25 +76,15 @@ class Points(commands.Cog):
         if not user_role:
             return await ctx.send('Please provide a user role.')
 
-        points_data = read_json('assets/points.json')
-
-        if str(user.id) in points_data:
+        if is_document_exists(self.staff_collection, user.id):
             return await ctx.send('User already registered.')
 
-        with open('assets/points.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data[str(user.id)] = {
-                "role": user_role,
-                "points": 100,
-                "history": []
-            }
-
-            temp.update(data)
-        write_json('assets/points.json', temp)
+        self.staff_collection.insert_one({
+            '_id': user.id,
+            'role': user_role,
+            'points': 100,
+            'history': []
+        })
 
         await ctx.send('All done! Check their profile using the command ``points profile``.')
 
@@ -118,17 +94,10 @@ class Points(commands.Cog):
         if not user:
             return await ctx.send('Please provide a user.')
 
-        points_data = read_json('assets/points.json')
-
-        if not str(user.id) in points_data:
+        if not is_document_exists(self.staff_collection, user.id):
             return await ctx.send('User not registered.')
 
-        with open('assets/points.json') as f:
-            data = json.load(f)
-
-            del data[str(user.id)]
-
-        write_json('assets/points.json', data)
+        self.staff_collection.delete_one({'_id': user.id})
 
         await ctx.send(f'All done! Unregistered ``{user.name}`` successfully.')
 
@@ -138,14 +107,13 @@ class Points(commands.Cog):
         if not user:
             return await ctx.send('Please provide a user.')
 
-        points_data = read_json('assets/points.json')
-
-        if not str(user.id) in points_data:
+        if not is_document_exists(self.staff_collection, user.id):
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        user_info = points_data[str(user.id)]
-        points = user_info['points']
-        user_role = user_info['role']
+        user_doc = self.staff_collection.find_one({'_id': user.id})
+
+        points = user_doc['points']
+        user_role = user_doc['role']
 
         embed = embeds.normal_no_description('Profile!', ctx)
 
@@ -163,55 +131,51 @@ class Points(commands.Cog):
 
     @points.command(name='add', help='Add points to a user\'s profile.')
     @commands.has_any_role(709556238463008768, 697877262737080392)
-    async def add(self, ctx, user: commands.MemberConverter = None, points=None, *, reason=None):
+    async def add(self, ctx, user: commands.MemberConverter = None, points: int = None, *, reason=None):
         if not user:
             return await ctx.send('Please provide a user.')
         if not points:
             return await ctx.send('Please provide the number of points to add.')
 
-        points_data = read_json('assets/points.json')
-
-        if not str(user.id) in points_data:
+        if not is_document_exists(self.staff_collection, user.id):
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        with open('assets/points.json') as f:
-            data = json.load(f)
-
-            data[str(user.id)]['points'] += int(points)
-            data[str(user.id)]['history'].append({
-                "reason": reason if reason else "No reason provided",
-                "action": f"Added {points} points.",
-                "created_at": datetime.datetime.now().timestamp()
-            })
-
-        write_json('assets/points.json', data)
+        self.staff_collection.find_one_and_update(
+            {'_id': user.id},
+            {
+                '$inc': {'points': points},
+                '$push': {'history': {
+                    'reason': reason if reason else 'No reason provided.',
+                    'action': f'Added {points} points.',
+                    'created_at': datetime.datetime.now().timestamp()
+                }}
+            }
+        )
 
         await ctx.send(f'Successfully added ``{points}`` points to ``{user.name}``. Check their current points using the command ``points profile``.')
 
     @points.command(name='remove', help='Remove points from a user\'s profile.')
     @commands.has_any_role(709556238463008768, 697877262737080392)
-    async def remove(self, ctx, user: commands.MemberConverter = None, points=None, *, reason=None):
+    async def remove(self, ctx, user: commands.MemberConverter = None, points: int = None, *, reason=None):
         if not user:
             return await ctx.send('Please provide a user.')
         if not points:
             return await ctx.send('Please provide the number of points to remove.')
 
-        points_data = read_json('assets/points.json')
-
-        if not str(user.id) in points_data:
+        if not is_document_exists(self.staff_collection, user.id):
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        with open('assets/points.json') as f:
-            data = json.load(f)
-
-            data[str(user.id)]['points'] -= int(points)
-            data[str(user.id)]['history'].append({
-                "reason": reason if reason else "No reason provided",
-                "action": f"Removed {points} points.",
-                "created_at": datetime.datetime.now().timestamp()
-            })
-
-        write_json('assets/points.json', data)
+        self.staff_collection.find_one_and_update(
+            {'_id': user.id},
+            {
+                '$inc': {'points': -points},
+                '$push': {'history': {
+                    'reason': reason if reason else 'No reason provided.',
+                    'action': f'Removed {points} points.',
+                    'created_at': datetime.datetime.now().timestamp()
+                }}
+            }
+        )
 
         await ctx.send(f'Successfully removed ``{points}`` points from ``{user.name}``. Check their current points using the command ``points profile``.')
 
@@ -221,13 +185,12 @@ class Points(commands.Cog):
         if not user:
             return await ctx.send('Please provide a user.')
 
-        points_data = read_json('assets/points.json')
-
-        if not str(user.id) in points_data:
+        if not is_document_exists(self.staff_collection, user.id):
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        user_data = points_data[str(user.id)]
-        history = user_data['history']
+        user_doc = self.staff_collection.find_one({'_id': user.id})
+
+        history = user_doc['history']
         history.sort(key=lambda x: x['created_at'], reverse=True)
 
         pages = MenuPages(source=HistoryMenu(history, ctx, user),

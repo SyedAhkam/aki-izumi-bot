@@ -1,19 +1,12 @@
 from discord.ext import commands
 
-import json
-import discord
-import typing
 import embeds
+import typing
+import discord
 
 
-def read_json(filename):
-    with open(filename) as f:
-        return json.load(f)
-
-
-def write_json(filename, data):
-    with open(filename, 'w') as f:
-        json.dump(data, f, indent=4)
+def is_document_exists(collection, id):
+    return not collection.count_documents({'_id': id}, limit=1)
 
 
 def isascii(s):
@@ -23,10 +16,112 @@ def isascii(s):
 class Config(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.config_collection = bot.db.config
+        self.nicknames_collection = bot.db.nicknames
+        self.auto_react_collection = bot.db.auto_react
 
-    @commands.command(name='add_nickname_role', help='Add roles to follow the nickname system.')
+    @commands.group(name='set', help='Group of commands to set some values required by bot.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
-    async def add_nickname_role(self, ctx, role: commands.RoleConverter = None, *, nickname=None):
+    async def _set(self, ctx):
+        commands = self._set.commands
+        command_names = [x.name for x in commands]
+
+        emoji = self.bot.get_emoji(740571420203024496)
+
+        description = ''
+        for command in command_names:
+            to_be_added = f'{str(emoji)} {command}\n'
+            description += to_be_added
+
+        embed = embeds.normal(description, 'Available commands', ctx)
+
+        await ctx.send(embed=embed)
+
+    @_set.command(name='verification_trigger_word', help='Set the word to be triggered for verification.')
+    @commands.has_permissions(administrator=True)
+    async def verification_trigger_word(self, ctx, *, trigger_word=None):
+        if not trigger_word:
+            return await ctx.send('Please provide a trigger word.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'verification'},
+            {'$set': {'verification_trigger_word': trigger_word}}
+        )
+
+        await ctx.send(f'Successfully set the ``verifcation_trigger_word`` as ``{trigger_word}``')
+
+    @_set.command(name='verification_followup_message', help='Set the message to be sent after a user is verified.')
+    @commands.has_permissions(administrator=True)
+    async def verification_followup_message(self, ctx, *, message=None):
+        if not message:
+            return await ctx.send('Please provide a message.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'verification'},
+            {'$set': {'verification_followup_message': message}}
+        )
+
+        await ctx.send(f'Successfully set the ``verification_followup_message`` as ``{message}``')
+
+    @_set.command(name='verification_channel', help='Set the channel to be used for verification.')
+    @commands.has_permissions(administrator=True)
+    async def verification_channel(self, ctx, *, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'verification'},
+            {'$set': {'verification_channel_id': channel.id}}
+        )
+
+        await ctx.send(f'Successfully set the ``verification_channel_id`` as ``{channel.name}``')
+
+    @_set.command(name='counting_channel', help='Set the channel to be used for counting.')
+    @commands.has_permissions(administrator=True)
+    async def counting_channel(self, ctx, *, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'counting'},
+            {'$set': {'counting_channel_id': channel.id}}
+        )
+
+        await ctx.send(f'Successfully set the ``counting_channel`` as ``{channel.name}``')
+
+    @_set.command(name='verified_role', help='Set the role to be given to a user after verification.')
+    @commands.has_permissions(administrator=True)
+    async def verified_role(self, ctx, *, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'verification'},
+            {'$set': {'verified_role_id': role.id}}
+        )
+
+        await ctx.send(f'Successfully set the ``verified_role`` as ``{role.name}``')
+
+    @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
+    @commands.has_permissions(administrator=True)
+    async def add(self, ctx):
+        commands = self.add.commands
+        command_names = [x.name for x in commands]
+
+        emoji = self.bot.get_emoji(740571420203024496)
+
+        description = ''
+        for command in command_names:
+            to_be_added = f'{str(emoji)} {command}\n'
+            description += to_be_added
+
+        embed = embeds.normal(description, 'Available commands', ctx)
+
+        await ctx.send(embed=embed)
+
+    @add.command(name='nickname_role', help='Add roles to follow the nickname system.')
+    @commands.has_permissions(administrator=True)
+    async def nickname_role(self, ctx, role: commands.RoleConverter = None, *, nickname=None):
         if not role:
             await ctx.send('Please provide a role.')
             return
@@ -34,32 +129,20 @@ class Config(commands.Cog):
             await ctx.send('Please provide a nickname.')
             return
 
-        nicknames = read_json('assets/nicknames.json')
+        if not is_document_exists(self.nicknames_collection, role.id):
+            return await ctx.send('Already exists')
 
-        if str(role.id) in nicknames:
-            await ctx.send('This role is already added.')
-            return
+        self.nicknames_collection.insert_one({
+            '_id': role.id,
+            'role_name': role.name,
+            'nickname': nickname
+        })
 
-        with open('assets/nicknames.json') as f:
-            data = json.load(f)
+        await ctx.send(f'Successfully added ``{role.name}`` to ``nickname_role`` list.')
 
-            temp = data
-
-            data = {}
-            data[str(role.id)] = {
-                'role_id': str(role.id),
-                'role_name': role.name,
-                'nickname': nickname
-            }
-
-            temp.update(data)
-
-        write_json('assets/nicknames.json', temp)
-        await ctx.send(f'Added role ``{role.name}`` with nickname ``{nickname}`` successfully')
-
-    @commands.command(name='add_auto_react', help='Add emojis to be reacted by the bot if a user sends the trigger word.')
+    @add.command(name='auto_react', help='Add emojis to be reacted by the bot if a user sends the trigger word.')
     @commands.has_permissions(administrator=True)
-    async def add_auto_react(self, ctx, trigger_word=None, emojis: commands.Greedy[typing.Union[discord.Emoji, str]] = None):
+    async def auto_react(self, ctx, trigger_word=None, emojis: commands.Greedy[typing.Union[discord.Emoji, str]] = None):
         if not trigger_word:
             await ctx.send('Please provide a trigger_word.')
             return
@@ -68,11 +151,8 @@ class Config(commands.Cog):
             await ctx.send('Please provide atleast one emoji.')
             return
 
-        emojis_data = read_json('assets/emojis.json')
-
-        if trigger_word in emojis_data:
-            await ctx.send(f'Your trigger word ``{trigger_word}`` is already added.')
-            return
+        if not is_document_exists(self.auto_react_collection, trigger_word):
+            return await ctx.send('Already exists')
 
         emojis_to_be_saved = []
 
@@ -83,54 +163,62 @@ class Config(commands.Cog):
             except TypeError:
                 emojis_to_be_saved.append(emoji.id)
 
-        with open('assets/emojis.json') as f:
-            data = json.load(f)
+        self.auto_react_collection.insert_one({
+            '_id': trigger_word.lower(),
+            'emojis': emojis_to_be_saved
+        })
 
-            temp = data
+        await ctx.send(f'Successfully added ``{trigger_word}`` with ``{len(emojis)}`` emojis to ``auto_react`` list.')
 
-            data = {}
-            data[trigger_word] = {
-                'emojis': emojis_to_be_saved
-            }
+    @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
+    async def remove(self, ctx):
+        commands = self.remove.commands
+        command_names = [x.name for x in commands]
 
-            temp.update(data)
+        emoji = self.bot.get_emoji(740571420203024496)
 
-        write_json('assets/emojis.json', temp)
-        await ctx.send(f'Successfully added ``{len(emojis_to_be_saved)}`` emojis with the trigger word ``{trigger_word}``')
+        description = ''
+        for command in command_names:
+            to_be_added = f'{str(emoji)} {command}\n'
+            description += to_be_added
 
-    @commands.command(name='remove_auto_react', help='Stop a trigger word from triggering anymore in auto react system.')
+        embed = embeds.normal(description, 'Available commands', ctx)
+
+        await ctx.send(embed=embed)
+
+    @remove.command(name='auto_react', help='Stop a trigger word from triggering anymore in auto react system.')
     @commands.has_permissions(administrator=True)
-    async def remove_auto_react(self, ctx, trigger_word=None):
+    async def _auto_react(self, ctx, trigger_word=None):
         if not trigger_word:
             await ctx.send('Please provide a trigger_word.')
             return
 
-        emojis = read_json('assets/emojis.json')
+        if is_document_exists(self.auto_react_collection, trigger_word):
+            return await ctx.send('Doesn\'t exist')
 
-        if not trigger_word in emojis:
-            await ctx.send(f'``{trigger_word}`` is not setup in my db. So there\'s no point in removing it.')
+        self.auto_react_collection.delete_one({'_id': trigger_word})
+
+        await ctx.send(f'Successfully removed ``{trigger_word}`` from ``auto_react`` list.')
+
+    @remove.command(name='nickname_role', help='Remove a nickname role.')
+    @commands.has_permissions(administrator=True)
+    async def _nickname_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            await ctx.send('Please provide a role.')
             return
 
-        emojis.pop(trigger_word, None)
+        if is_document_exists(self.nicknames_collection, role.id):
+            return await ctx.send('Doesn\'t exist')
 
-        write_json('assets/emojis.json', emojis)
-        await ctx.send(f'Successfully removed ``{trigger_word}``')
+        self.nicknames_collection.delete_one({'_id': role.id})
+
+        await ctx.send(f'Successfully removed ``{role.name}`` from ``nickname_role`` list.')
 
     @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
-    @commands.has_role(697877262737080391)
+    @commands.has_permissions(administrator=True)
     async def placeholders(self, ctx):
-
-        placeholders = [
-            {"name": "user", "help": "Gives the user's name."},
-            {"name": "user_mention", "help": "Gives the user's tag as a mention."},
-            {"name": "user_id", "help": "Gives the user's id."},
-            {"name": "user_tag", "help": "Gives the user's tag."},
-            {"name": "user_color", "help": "Gives the user's color."},
-            {"name": "user_avatar_url", "help": "Gives the user's avatar url."},
-            {"name": "server", "help": "Gives the server's name"},
-            {"name": "server_members", "help": "Gives the server's total members."},
-            {"name": "server_icon_url", "help": "Gives the server's icon url."}
-        ]
+        placeholders = self.config_collection.find_one(
+            {'_id': 'placeholders'})['placeholders']
 
         emoji = self.bot.get_emoji(740571420203024496)
 
@@ -144,81 +232,6 @@ class Config(commands.Cog):
         embed = embeds.normal(description, 'Placeholders', ctx)
 
         await ctx.send(embed=embed)
-
-    @commands.command(name='set_verification_trigger_word', help='Set the word to be triggered for verification.')
-    async def set_verification_trigger_word(self, ctx, *, trigger_word=None):
-        if not trigger_word:
-            return await ctx.send('Please provide a trigger_word.')
-
-        config_data = read_json('assets/config.json')
-
-        with open('assets/config.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data['verification_trigger_word'] = trigger_word
-
-            temp.update(data)
-
-        write_json('assets/config.json', temp)
-
-        # for some reason i gotta do this
-        ctx.bot.unload_extension(f'cogs.events')
-        ctx.bot.load_extension(f'cogs.events')
-
-        await ctx.send('All done!')
-
-    @commands.command(name='set_verification_followup_message', help='Set a message to be sent after a user is verified.')
-    async def set_verification_followup_message(self, ctx, *, message=None):
-        if not message:
-            return await ctx.send('Please provide a message.')
-
-        config_data = read_json('assets/config.json')
-
-        with open('assets/config.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data['verification_followup_message'] = message
-
-            temp.update(data)
-
-        write_json('assets/config.json', temp)
-
-        # for some reason i gotta do this
-        ctx.bot.unload_extension(f'cogs.events')
-        ctx.bot.load_extension(f'cogs.events')
-
-        await ctx.send('All done!')
-
-    @commands.command(name='set_verification_channel', help='Set the channel to be used for verification.')
-    async def set_verification_channel(self, ctx, *, channel: commands.TextChannelConverter = None):
-        if not channel:
-            return await ctx.send('Please provide a channel.')
-
-        config_data = read_json('assets/config.json')
-
-        with open('assets/config.json') as f:
-            data = json.load(f)
-
-            temp = data
-
-            data = {}
-            data['verification_channel_id'] = channel.id
-
-            temp.update(data)
-
-        write_json('assets/config.json', temp)
-
-        # for some reason i gotta do this
-        ctx.bot.unload_extension(f'cogs.events')
-        ctx.bot.load_extension(f'cogs.events')
-
-        await ctx.send('All done!')
 
 
 def setup(bot):
