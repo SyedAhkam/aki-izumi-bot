@@ -121,7 +121,7 @@ class Embed(commands.Cog):
         self.embeds_collection = bot.db.embeds
 
     @commands.group(name='embed', invoke_without_command=True, help='A group of commands for making dynamic embeds and saving them for later use.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def embed(self, ctx):
         commands = self.embed.commands
         command_names = [x.name for x in commands]
@@ -138,7 +138,7 @@ class Embed(commands.Cog):
         await ctx.send(embed=embed)
 
     @embed.command(name='new', help='Create a new embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def new(self, ctx, *, name=None):
         if not name:
             return await ctx.send('Please provide a name for embed.')
@@ -158,7 +158,7 @@ class Embed(commands.Cog):
         await ctx.send('All done, Preview your embed by using ``embed preview`` command!')
 
     @embed.command(name='preview', help='Preview an embed created already.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def preview(self, ctx, *, name=None):
         if not name:
             return await ctx.send('Please provide an embed name.')
@@ -178,7 +178,7 @@ class Embed(commands.Cog):
         await ctx.send(content="Here is your embed:", embed=formatted_embed)
 
     @embed.command(name='list', help='List all the previously made embeds.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def _list(self, ctx):
         all_embeds = list(self.embeds_collection.find({}))
 
@@ -193,7 +193,7 @@ class Embed(commands.Cog):
         await menu.start(ctx)
 
     @embed.group(name='edit', invoke_without_command=True, help='A group of commands used to edit an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def edit(self, ctx):
         commands = self.edit.commands
         command_names = [x.name for x in commands]
@@ -210,7 +210,7 @@ class Embed(commands.Cog):
         await ctx.send(embed=embed)
 
     @edit.command(name='title', help='Edit the title of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def title(self, ctx, name=None, *, new_title=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -239,7 +239,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed title as ```{new_title}```')
 
     @edit.command(name='description', help='Edit the description of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def description(self, ctx, name=None, *, new_description=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -268,7 +268,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed description as ```{new_description}```')
 
     @edit.command(name='color', help='Edit the color of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def color(self, ctx, name=None, *, new_color=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -302,7 +302,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed color as ```{new_color}```')
 
     @edit.command(name='timestamp', help='Edit the timestamp of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def timestamp(self, ctx, name=None, *, new_timestamp=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -336,7 +336,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed timestamp as ```{new_timestamp}```')
 
     @edit.command(name='url', help='Edit the url of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def url(self, ctx, name=None, *, new_url=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -368,7 +368,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed url as ```{new_url}```')
 
     @edit.command(name='footer', help='Edit the footer of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def footer(self, ctx, name=None, text=None, icon_url=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -401,7 +401,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed footer as ```{text}```')
 
     @edit.command(name='image', help='Edit the image of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def image(self, ctx, name=None, image_url=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -431,7 +431,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed image as ```{image_url}```')
 
     @edit.command(name='thumbnail', help='Edit the thumbnail of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def thumbnail(self, ctx, name=None, thumbnail_url=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -461,7 +461,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed thumbnail as ```{thumbnail_url}```')
 
     @edit.command(name='author', help='Edit the author of an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def author(self, ctx, name=None, author_name=None, icon_url=None, author_url=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -496,7 +496,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully set the embed author as ```{author_name}```')
 
     @embed.group(name='field', invoke_without_command=True, help='Group of commands for adding fields in an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def field(self, ctx):
         commands = self.field.commands
         command_names = [x.name for x in commands]
@@ -513,7 +513,7 @@ class Embed(commands.Cog):
         await ctx.send(embed=embed)
 
     @field.command(name='add', help='Add a field in an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def add(self, ctx, name=None, field_name=None, field_value=None, is_inline=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -547,7 +547,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully added a field with name and value```{field_name}\n{field_value}```')
 
     @field.command(name='remove', help='Remove a field from an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def remove(self, ctx, name=None, *, field_name=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -582,7 +582,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully removed field with name```{field_name}```')
 
     @field.command(name='clear_all', help='Clear all the fields from an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def clear_all(self, ctx, name=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -606,7 +606,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully cleared all embed fields.')
 
     @embed.command(name='delete', help='Delete an embed.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def delete(self, ctx, name=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
@@ -619,7 +619,7 @@ class Embed(commands.Cog):
         await ctx.send(f'Successfully deleted the embed with name {name}')
 
     @embed.command(name='send_here', help='Send an embed in the same channel.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def send_here(self, ctx, name=None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to send.')
@@ -641,7 +641,7 @@ class Embed(commands.Cog):
         await ctx.message.delete()
 
     @embed.command(name='send_in', help='Send an embed in the specified channel.')
-    # @commands.has_any_role(697877262737080392, 709556238463008768)
+    @commands.has_any_role(697877262737080392, 709556238463008768)
     async def send_in(self, ctx, name=None, channel: commands.TextChannelConverter = None):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to send.')

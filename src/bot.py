@@ -14,8 +14,7 @@ CAT_API_KEY = os.getenv('CAT_API_KEY')
 DOG_API_KEY = os.getenv('DOG_API_KEY')
 IGDB_API_KEY = os.getenv('IGDB_API_KEY')
 
-# bot = commands.Bot(command_prefix=['a!', 'A!'], case_insensitive=True)
-bot = commands.Bot(command_prefix=['ab!', 'Ab!'], case_insensitive=True)
+bot = commands.Bot(command_prefix=['a!', 'A!'], case_insensitive=True)
 
 bot.owner_ids = [342545053169877006, 674432715088592915]
 bot.cat_api_key = CAT_API_KEY

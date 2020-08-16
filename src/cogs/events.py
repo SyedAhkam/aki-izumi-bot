@@ -113,8 +113,7 @@ class Events(commands.Cog):
 
                     # Everything stays good
 
-                    # emoji = self.bot.get_emoji(736091414731030541)
-                    emoji = self.bot.get_emoji(737970174975541248)
+                    emoji = self.bot.get_emoji(736091414731030541)
                     await message.add_reaction(str(emoji))
 
                     self.config_collection.find_one_and_update(
