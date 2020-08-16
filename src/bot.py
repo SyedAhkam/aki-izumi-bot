@@ -23,10 +23,13 @@ bot.dog_api_key = DOG_API_KEY
 bot.igdb_api_key = IGDB_API_KEY
 bot.db = MongoClient(MONGODB_URI).bot
 
+ignored_cogs = ()
 if __name__ == '__main__':
     # Load the cogs in cogs directory
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):
+            if filename[:-3] in ignored_cogs:
+                continue
             bot.load_extension(f'cogs.{filename[:-3]}')
             print(f'Loaded {filename}')
 
