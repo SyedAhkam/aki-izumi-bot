@@ -1,9 +1,3 @@
-src/assets/counting.json
 src/.env
-src/assets/emojis.json
-src/assets/nicknames.json
-src/assets/embeds.json
 __pycache__/
 .vscode
-src/assets/config.json
-src/assets/points.json
