@@ -32,6 +32,11 @@ def blank():
     return embed
 
 
+def blank_no_color():
+    embed = discord.Embed()
+    return embed
+
+
 def custom(title, color, description, timestamp, url):
 
     try:
