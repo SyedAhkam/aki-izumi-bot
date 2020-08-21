@@ -6,7 +6,7 @@ import discord
 
 
 def is_document_exists(collection, id):
-    return not collection.count_documents({'_id': id}, limit=1)
+    return collection.count_documents({'_id': id}, limit=1)
 
 
 def isascii(s):
@@ -129,7 +129,7 @@ class Config(commands.Cog):
             await ctx.send('Please provide a nickname.')
             return
 
-        if not is_document_exists(self.nicknames_collection, role.id):
+        if is_document_exists(self.nicknames_collection, role.id):
             return await ctx.send('Already exists')
 
         self.nicknames_collection.insert_one({
@@ -151,7 +151,7 @@ class Config(commands.Cog):
             await ctx.send('Please provide atleast one emoji.')
             return
 
-        if not is_document_exists(self.auto_react_collection, trigger_word):
+        if is_document_exists(self.auto_react_collection, trigger_word):
             return await ctx.send('Already exists')
 
         emojis_to_be_saved = []
@@ -193,7 +193,7 @@ class Config(commands.Cog):
             await ctx.send('Please provide a trigger_word.')
             return
 
-        if is_document_exists(self.auto_react_collection, trigger_word):
+        if not is_document_exists(self.auto_react_collection, trigger_word):
             return await ctx.send('Doesn\'t exist')
 
         self.auto_react_collection.delete_one({'_id': trigger_word})
@@ -207,7 +207,7 @@ class Config(commands.Cog):
             await ctx.send('Please provide a role.')
             return
 
-        if is_document_exists(self.nicknames_collection, role.id):
+        if not is_document_exists(self.nicknames_collection, role.id):
             return await ctx.send('Doesn\'t exist')
 
         self.nicknames_collection.delete_one({'_id': role.id})
