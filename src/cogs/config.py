@@ -89,6 +89,24 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully set the ``counting_channel`` as ``{channel.name}``')
 
+    @_set.command(name='counting_count', help='Set the counting count.')
+    @commands.has_permissions(administrator=True)
+    async def counting_count(self, ctx, count=None, last_msg_author: commands.MemberConverter = None):
+        if not count:
+            return await ctx.send('Please provide a count.')
+        if not last_msg_author:
+            return await ctx.send('Please provide last_msg_author.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'counting'},
+            {'$set':
+                {'last_msg_author_id': last_msg_author.id,
+                    'last_number': int(count)}
+             }
+        )
+
+        await ctx.send(f'Successfully set the ``counting_count`` as ``{count}``')
+
     @_set.command(name='verified_role', help='Set the role to be given to a user after verification.')
     @commands.has_permissions(administrator=True)
     async def verified_role(self, ctx, *, role: commands.RoleConverter = None):
@@ -151,9 +169,6 @@ class Config(commands.Cog):
             await ctx.send('Please provide atleast one emoji.')
             return
 
-        if is_document_exists(self.auto_react_collection, trigger_word):
-            return await ctx.send('Already exists')
-
         emojis_to_be_saved = []
 
         for emoji in emojis:
@@ -162,6 +177,14 @@ class Config(commands.Cog):
                     emojis_to_be_saved.append(emoji)
             except TypeError:
                 emojis_to_be_saved.append(emoji.id)
+
+        if is_document_exists(self.auto_react_collection, trigger_word):
+            self.auto_react_collection.find_one_and_update(
+                {'_id': trigger_word.lower()},
+                {'$push': {'emojis': {'$each': emojis_to_be_saved}}}
+            )
+
+            return await ctx.send(f'Successfully added `{len(emojis_to_be_saved)}` emojis for trigger word `{trigger_word}`.')
 
         self.auto_react_collection.insert_one({
             '_id': trigger_word.lower(),
