@@ -6,8 +6,8 @@ import ast
 import embeds
 
 
-def is_document_exists(collection, id):
-    return collection.count_documents({'_id': id}, limit=1)
+async def is_document_exists(collection, id):
+    return await collection.count_documents({'_id': id}, limit=1)
 
 # For eval command
 
@@ -137,7 +137,7 @@ class OwnerOnly(commands.Cog):
 
     @commands.command(name='blacklist', help='Blacklist a user from using the bot commands.')
     @commands.is_owner()
-    async def blacklist(self, ctx, user: commands.UserConverter = None, reason=None):
+    async def blacklist(self, ctx, user: commands.UserConverter = None, *, reason=None):
 
         if not user:
             await ctx.send('Please specify a user to blacklist.')
@@ -146,10 +146,11 @@ class OwnerOnly(commands.Cog):
         if user.id in ctx.bot.owner_ids:
             return await ctx.send('Can\'t blacklist the owners.')
 
-        if is_document_exists(self.blacklisted_collection, user.id):
+        is_already_exists = await is_document_exists(self.blacklisted_collection, user.id)
+        if is_already_exists:
             return await ctx.send('This user is already blacklisted.')
 
-        self.blacklisted_collection.insert_one({
+        await self.blacklisted_collection.insert_one({
             '_id': user.id,
             'reason': reason if reason else 'No reason provided'
         })
@@ -166,10 +167,11 @@ class OwnerOnly(commands.Cog):
             await ctx.send('Please specify a user to unblacklist.')
             return
 
-        if not is_document_exists(self.blacklisted_collection, user.id):
+        is_already_exists = await is_document_exists(self.blacklisted_collection, user.id)
+        if not is_already_exists:
             return await ctx.send('This user is not blacklisted.')
 
-        self.blacklisted_collection.delete_one({'_id': user.id})
+        await self.blacklisted_collection.delete_one({'_id': user.id})
 
         embed = embeds.normal(
             f'``{user.name}`` has been removed from the bot blacklist.', 'Unblacklisted!', ctx)

@@ -6,8 +6,8 @@ import embeds
 import datetime
 
 
-def is_document_exists(collection, id):
-    return collection.count_documents({'_id': id}, limit=1)
+async def is_document_exists(collection, id):
+    return await collection.count_documents({'_id': id}, limit=1)
 
 
 class HistoryMenu(ListPageSource):
@@ -76,10 +76,11 @@ class Points(commands.Cog):
         if not user_role:
             return await ctx.send('Please provide a user role.')
 
-        if is_document_exists(self.staff_collection, user.id):
+        is_already_exists = await is_document_exists(self.staff_collection, user.id)
+        if is_already_exists:
             return await ctx.send('User already registered.')
 
-        self.staff_collection.insert_one({
+        await self.staff_collection.insert_one({
             '_id': user.id,
             'role': user_role,
             'points': 100,
@@ -94,10 +95,11 @@ class Points(commands.Cog):
         if not user:
             return await ctx.send('Please provide a user.')
 
-        if not is_document_exists(self.staff_collection, user.id):
+        is_already_exists = await is_document_exists(self.staff_collection, user.id)
+        if not is_already_exists:
             return await ctx.send('User not registered.')
 
-        self.staff_collection.delete_one({'_id': user.id})
+        await self.staff_collection.delete_one({'_id': user.id})
 
         await ctx.send(f'All done! Unregistered ``{user.name}`` successfully.')
 
@@ -107,10 +109,11 @@ class Points(commands.Cog):
         if not user:
             return await ctx.send('Please provide a user.')
 
-        if not is_document_exists(self.staff_collection, user.id):
+        is_already_exists = await is_document_exists(self.staff_collection, user.id)
+        if not is_already_exists:
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        user_doc = self.staff_collection.find_one({'_id': user.id})
+        user_doc = await self.staff_collection.find_one({'_id': user.id})
 
         points = user_doc['points']
         user_role = user_doc['role']
@@ -137,10 +140,11 @@ class Points(commands.Cog):
         if not points:
             return await ctx.send('Please provide the number of points to add.')
 
-        if not is_document_exists(self.staff_collection, user.id):
+        is_already_exists = await is_document_exists(self.staff_collection, user.id)
+        if not is_already_exists:
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        self.staff_collection.find_one_and_update(
+        await self.staff_collection.find_one_and_update(
             {'_id': user.id},
             {
                 '$inc': {'points': points},
@@ -162,10 +166,11 @@ class Points(commands.Cog):
         if not points:
             return await ctx.send('Please provide the number of points to remove.')
 
-        if not is_document_exists(self.staff_collection, user.id):
+        is_already_exists = await is_document_exists(self.staff_collection, user.id)
+        if not is_already_exists:
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        self.staff_collection.find_one_and_update(
+        await self.staff_collection.find_one_and_update(
             {'_id': user.id},
             {
                 '$inc': {'points': -points},
@@ -185,10 +190,11 @@ class Points(commands.Cog):
         if not user:
             return await ctx.send('Please provide a user.')
 
-        if not is_document_exists(self.staff_collection, user.id):
+        is_already_exists = await is_document_exists(self.staff_collection, user.id)
+        if not is_already_exists:
             return await ctx.send('This user isn\'t registered, Please register them using the command ``points register``.')
 
-        user_doc = self.staff_collection.find_one({'_id': user.id})
+        user_doc = await self.staff_collection.find_one({'_id': user.id})
 
         history = user_doc['history']
         history.sort(key=lambda x: x['created_at'], reverse=True)

@@ -14,8 +14,8 @@ url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a
 color_converter = commands.ColourConverter()
 
 
-def is_document_exists(collection, id):
-    return collection.count_documents({'_id': id}, limit=1)
+async def is_document_exists(collection, id):
+    return await collection.count_documents({'_id': id}, limit=1)
 
 
 async def convert_color(ctx, color):
@@ -55,22 +55,22 @@ def format_string_with_keys(string, keys):
 async def format_embed(user, guild, embed):
     keys = get_keys(user, guild)
 
-    if not embed.title == discord.Embed.Empty:
+    if embed.title:
         embed.title = format_string_with_keys(embed.title, keys)
 
-    if not embed.description == discord.Embed.Empty:
+    if embed.description:
         embed.description = format_string_with_keys(embed.description, keys)
 
-    if not embed.footer == discord.Embed.Empty:
+    if embed.footer:
         footer_text = format_string_with_keys(embed.footer.text, keys)
         embed.set_footer(text=footer_text, icon_url=embed.footer.icon_url)
 
-    if not embed.author == discord.Embed.Empty:
+    if embed.author:
         author_name = format_string_with_keys(embed.author.name, keys)
         embed.set_author(name=author_name, url=embed.author.url,
                          icon_url=embed.author.icon_url)
 
-    if not embed.fields == discord.Embed.Empty:
+    if embed.fields:
         new_fields = []
         for field in embed.fields:
             formatted_field_name = format_string_with_keys(field.name, keys)
@@ -143,13 +143,14 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide a name for embed.')
 
-        if is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if is_already_exists:
             return await ctx.send('Embed name already exists, Choose a different name.')
 
         embed = embeds.blank_no_color()
         embed_raw = embed.to_dict()
 
-        self.embeds_collection.insert_one({
+        await self.embeds_collection.insert_one({
             '_id': name,
             'embed': embed_raw,
             'created_at': datetime.datetime.now().timestamp()
@@ -162,11 +163,11 @@ class Embed(commands.Cog):
     async def preview(self, ctx, *, name=None):
         if not name:
             return await ctx.send('Please provide an embed name.')
-
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
 
         embed = embeds.get_embed_from_dict(embed_doc['embed'])
 
@@ -180,7 +181,7 @@ class Embed(commands.Cog):
     @embed.command(name='list', help='List all the previously made embeds.')
     @commands.has_any_role(697877262737080392, 709556238463008768)
     async def _list(self, ctx):
-        all_embeds = list(self.embeds_collection.find({}))
+        all_embeds = await self.embeds_collection.find({}).to_list(None)
 
         if not all_embeds:
             return await ctx.send('No embeds found, Create one using ``embed new`` command.')
@@ -217,10 +218,11 @@ class Embed(commands.Cog):
         if not new_title:
             return await ctx.send('New title is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -231,7 +233,7 @@ class Embed(commands.Cog):
             new_embed.title = new_title
 
         new_embed_raw = new_embed.to_dict()
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -246,10 +248,11 @@ class Embed(commands.Cog):
         if not new_description:
             return await ctx.send('New description is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -260,7 +263,7 @@ class Embed(commands.Cog):
             new_embed.description = new_description
 
         new_embed_raw = new_embed.to_dict()
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -275,10 +278,11 @@ class Embed(commands.Cog):
         if not new_color:
             return await ctx.send('New color is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -294,7 +298,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -309,10 +313,11 @@ class Embed(commands.Cog):
         if not new_timestamp:
             return await ctx.send('New timestamp is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
         new_embed = embeds.get_embed_from_dict(embed_raw)
 
@@ -328,7 +333,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -343,10 +348,11 @@ class Embed(commands.Cog):
         if not new_url:
             return await ctx.send('New url is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
         new_embed = embeds.get_embed_from_dict(embed_raw)
 
@@ -360,7 +366,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -378,10 +384,11 @@ class Embed(commands.Cog):
         if not icon_url:
             icon_url = discord.Embed.Empty
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -393,7 +400,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -408,10 +415,11 @@ class Embed(commands.Cog):
         if not image_url:
             return await ctx.send('Image url is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -423,7 +431,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -438,10 +446,11 @@ class Embed(commands.Cog):
         if not thumbnail_url:
             return await ctx.send('Thumbnail url is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -453,7 +462,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -472,10 +481,11 @@ class Embed(commands.Cog):
         if not author_url:
             author_url = discord.Embed.Empty
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -488,7 +498,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -527,10 +537,11 @@ class Embed(commands.Cog):
         else:
             is_inline = is_inline.lower() == "true"
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -539,7 +550,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -554,10 +565,11 @@ class Embed(commands.Cog):
         if not field_name:
             return await ctx.send('Field name is a required field which you\'re missing.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -574,7 +586,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -587,10 +599,11 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         new_embed = embeds.get_embed_from_dict(embed_raw)
@@ -598,7 +611,7 @@ class Embed(commands.Cog):
 
         new_embed_raw = new_embed.to_dict()
 
-        self.embeds_collection.find_one_and_update(
+        await self.embeds_collection.find_one_and_update(
             {'_id': name},
             {'$set': {'embed': new_embed_raw}}
         )
@@ -611,10 +624,11 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to edit.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        self.embeds_collection.delete_one({'_id': name})
+        await self.embeds_collection.delete_one({'_id': name})
 
         await ctx.send(f'Successfully deleted the embed with name {name}')
 
@@ -624,10 +638,11 @@ class Embed(commands.Cog):
         if not name:
             return await ctx.send('Please provide the name of embed which you want to send.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         embed = embeds.get_embed_from_dict(embed_raw)
@@ -648,10 +663,11 @@ class Embed(commands.Cog):
         if not channel:
             return await ctx.send('Please provide a channel.')
 
-        if not is_document_exists(self.embeds_collection, name):
+        is_already_exists = await is_document_exists(self.embeds_collection, name)
+        if not is_already_exists:
             return await ctx.send('This embed doesn\'t exist, Create it using the command ``embed new``.')
 
-        embed_doc = self.embeds_collection.find_one({'_id': name})
+        embed_doc = await self.embeds_collection.find_one({'_id': name})
         embed_raw = embed_doc['embed']
 
         embed = embeds.get_embed_from_dict(embed_raw)
