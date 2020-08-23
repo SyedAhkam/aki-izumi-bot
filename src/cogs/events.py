@@ -47,8 +47,8 @@ class Events(commands.Cog):
         for word in message.content.split():
             is_word_exists = await is_document_exists(self.auto_react_collection, word.lower())
             if is_word_exists:
-                emoji_list = await self.auto_react_collection.find_one({'_id': word.lower()})[
-                    'emojis']
+                emoji_collection = await self.auto_react_collection.find_one({'_id': word.lower()})
+                emoji_list = emoji_collection['emojis']
                 emoji_object_list = []
 
                 for emoji in emoji_list:
