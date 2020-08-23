@@ -11,8 +11,8 @@ def format_nickname(string, data):
     return string.format(**data)
 
 
-def is_document_exists(collection, id):
-    return collection.count_documents({'_id': id}, limit=1)
+async def is_document_exists(collection, id):
+    return await collection.count_documents({'_id': id}, limit=1)
 
 
 class Events(commands.Cog):
@@ -24,7 +24,8 @@ class Events(commands.Cog):
         self.nicknames_collection = bot.db.nicknames
 
     async def bot_check(self, ctx):
-        if is_document_exists(self.blacklisted_collection, ctx.author.id):
+        is_blacklisted = await is_document_exists(self.blacklisted_collection, ctx.author.id)
+        if is_blacklisted:
             if ctx.message.content.startswith(ctx.prefix):
                 raise exceptions.UserBlacklisted(ctx)
         return True
@@ -44,8 +45,9 @@ class Events(commands.Cog):
     async def on_message(self, message):
         # auto_react
         for word in message.content.split():
-            if is_document_exists(self.auto_react_collection, word.lower()):
-                emoji_list = self.auto_react_collection.find_one({'_id': word.lower()})[
+            is_word_exists = await is_document_exists(self.auto_react_collection, word.lower())
+            if is_word_exists:
+                emoji_list = await self.auto_react_collection.find_one({'_id': word.lower()})[
                     'emojis']
                 emoji_object_list = []
 
@@ -61,11 +63,13 @@ class Events(commands.Cog):
                 await message.add_reaction(str(choosen_emoji))
 
         # counting
-        if message.channel.id == self.config_collection.find_one({'_id': 'counting'})['counting_channel_id']:
+        counting_doc = await self.config_collection.find_one({'_id': 'counting'})
+        if message.channel.id == counting_doc['counting_channel_id']:
 
             ctx = await self.bot.get_context(message)
 
-            if is_document_exists(self.blacklisted_collection, ctx.author.id):
+            is_blacklisted = await is_document_exists(self.blacklisted_collection, ctx.author.id)
+            if is_blacklisted:
                 embed = embeds.error(
                     f'Sorry you\'ve been blacklisted from using this bot. Ask the bot owner to remove you from blacklist.', 'Blacklisted', ctx)
                 await message.channel.send(message.author.mention, embed=embed, delete_after=3)
@@ -76,8 +80,7 @@ class Events(commands.Cog):
                 try:
                     num = int(message.content)
 
-                    counting_doc = self.config_collection.find_one(
-                        {'_id': 'counting'})
+                    counting_doc = await self.config_collection.find_one({'_id': 'counting'})
                     last_number = counting_doc['last_number']
 
                     # if last_number == num:
@@ -102,7 +105,7 @@ class Events(commands.Cog):
 
                         await message.channel.send(embed=embed)
 
-                        self.config_collection.find_one_and_update(
+                        await self.config_collection.find_one_and_update(
                             {'_id': 'counting'},
                             {'$set': {
                                 'last_number': 0,
@@ -116,7 +119,7 @@ class Events(commands.Cog):
                     emoji = self.bot.get_emoji(746062865496277073)
                     await message.add_reaction(str(emoji))
 
-                    self.config_collection.find_one_and_update(
+                    await self.config_collection.find_one_and_update(
                         {'_id': 'counting'},
                         {'$set': {
                             'last_number': num,
@@ -128,7 +131,7 @@ class Events(commands.Cog):
                     pass
 
         # verification
-        verification_doc = self.config_collection.find_one(
+        verification_doc = await self.config_collection.find_one(
             {'_id': 'verification'})
         if message.channel.id == verification_doc['verification_channel_id']:
             if message.content == verification_doc['verification_trigger_word']:
@@ -154,8 +157,9 @@ class Events(commands.Cog):
 
             role_id = new_roles[0].id
 
-            if is_document_exists(self.nicknames_collection, role_id):
-                doc = self.nicknames_collection.find_one({'_id': role_id})
+            is_nickname_exists = await is_document_exists(self.nicknames_collection, role_id)
+            if is_nickname_exists:
+                doc = await self.nicknames_collection.find_one({'_id': role_id})
 
                 formatted_nickname = format_nickname(
                     doc['nickname'], {'name': after.name})
@@ -166,8 +170,9 @@ class Events(commands.Cog):
 
             role_id = removed_roles[0].id
 
-            if is_document_exists(self.nicknames_collection, role_id):
-                doc = self.nicknames_collection.find_one({'_id': role_id})
+            is_nickname_exists = await is_document_exists(self.nicknames_collection, role_id)
+            if is_nickname_exists:
+                doc = await self.nicknames_collection.find_one({'_id': role_id})
 
                 await after.edit(nick='')
 

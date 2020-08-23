@@ -5,8 +5,8 @@ import typing
 import discord
 
 
-def is_document_exists(collection, id):
-    return collection.count_documents({'_id': id}, limit=1)
+async def is_document_exists(collection, id):
+    return await collection.count_documents({'_id': id}, limit=1)
 
 
 def isascii(s):
@@ -43,7 +43,7 @@ class Config(commands.Cog):
         if not trigger_word:
             return await ctx.send('Please provide a trigger word.')
 
-        self.config_collection.find_one_and_update(
+        await self.config_collection.find_one_and_update(
             {'_id': 'verification'},
             {'$set': {'verification_trigger_word': trigger_word}}
         )
@@ -56,7 +56,7 @@ class Config(commands.Cog):
         if not message:
             return await ctx.send('Please provide a message.')
 
-        self.config_collection.find_one_and_update(
+        await self.config_collection.find_one_and_update(
             {'_id': 'verification'},
             {'$set': {'verification_followup_message': message}}
         )
@@ -69,7 +69,7 @@ class Config(commands.Cog):
         if not channel:
             return await ctx.send('Please provide a channel.')
 
-        self.config_collection.find_one_and_update(
+        await self.config_collection.find_one_and_update(
             {'_id': 'verification'},
             {'$set': {'verification_channel_id': channel.id}}
         )
@@ -82,7 +82,7 @@ class Config(commands.Cog):
         if not channel:
             return await ctx.send('Please provide a channel.')
 
-        self.config_collection.find_one_and_update(
+        await self.config_collection.find_one_and_update(
             {'_id': 'counting'},
             {'$set': {'counting_channel_id': channel.id}}
         )
@@ -97,7 +97,7 @@ class Config(commands.Cog):
         if not last_msg_author:
             return await ctx.send('Please provide last_msg_author.')
 
-        self.config_collection.find_one_and_update(
+        await self.config_collection.find_one_and_update(
             {'_id': 'counting'},
             {'$set':
                 {'last_msg_author_id': last_msg_author.id,
@@ -113,7 +113,7 @@ class Config(commands.Cog):
         if not role:
             return await ctx.send('Please provide a role.')
 
-        self.config_collection.find_one_and_update(
+        await self.config_collection.find_one_and_update(
             {'_id': 'verification'},
             {'$set': {'verified_role_id': role.id}}
         )
@@ -147,10 +147,12 @@ class Config(commands.Cog):
             await ctx.send('Please provide a nickname.')
             return
 
-        if is_document_exists(self.nicknames_collection, role.id):
+        is_already_exists = await is_document_exists(self.nicknames_collection, role.id)
+
+        if is_already_exists:
             return await ctx.send('Already exists')
 
-        self.nicknames_collection.insert_one({
+        await self.nicknames_collection.insert_one({
             '_id': role.id,
             'role_name': role.name,
             'nickname': nickname
@@ -178,15 +180,16 @@ class Config(commands.Cog):
             except TypeError:
                 emojis_to_be_saved.append(emoji.id)
 
-        if is_document_exists(self.auto_react_collection, trigger_word):
-            self.auto_react_collection.find_one_and_update(
+        is_already_exists = await is_document_exists(self.auto_react_collection, trigger_word)
+        if is_already_exists:
+            await self.auto_react_collection.find_one_and_update(
                 {'_id': trigger_word.lower()},
                 {'$push': {'emojis': {'$each': emojis_to_be_saved}}}
             )
 
             return await ctx.send(f'Successfully added `{len(emojis_to_be_saved)}` emojis for trigger word `{trigger_word}`.')
 
-        self.auto_react_collection.insert_one({
+        await self.auto_react_collection.insert_one({
             '_id': trigger_word.lower(),
             'emojis': emojis_to_be_saved
         })
@@ -216,10 +219,11 @@ class Config(commands.Cog):
             await ctx.send('Please provide a trigger_word.')
             return
 
-        if not is_document_exists(self.auto_react_collection, trigger_word):
+        is_already_exists = await is_document_exists(self.auto_react_collection, trigger_word)
+        if not is_already_exists:
             return await ctx.send('Doesn\'t exist')
 
-        self.auto_react_collection.delete_one({'_id': trigger_word})
+        await self.auto_react_collection.delete_one({'_id': trigger_word})
 
         await ctx.send(f'Successfully removed ``{trigger_word}`` from ``auto_react`` list.')
 
@@ -230,10 +234,11 @@ class Config(commands.Cog):
             await ctx.send('Please provide a role.')
             return
 
-        if not is_document_exists(self.nicknames_collection, role.id):
+        is_already_exists = await is_document_exists(self.nicknames_collection, role.id)
+        if not is_already_exists:
             return await ctx.send('Doesn\'t exist')
 
-        self.nicknames_collection.delete_one({'_id': role.id})
+        await self.nicknames_collection.delete_one({'_id': role.id})
 
         await ctx.send(f'Successfully removed ``{role.name}`` from ``nickname_role`` list.')
 

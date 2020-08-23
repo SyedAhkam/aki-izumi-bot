@@ -1,6 +1,6 @@
 from discord.ext import commands
 from dotenv import load_dotenv
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 
 import logging
 import os
@@ -34,9 +34,9 @@ bot.dog_api_key = DOG_API_KEY
 bot.igdb_api_key = IGDB_API_KEY
 
 if is_env_dev():
-    bot.db = MongoClient(MONGODB_URI).bot_beta
+    bot.db = AsyncIOMotorClient(MONGODB_URI).bot_beta
 else:
-    bot.db = MongoClient(MONGODB_URI).bot
+    bot.db = AsyncIOMotorClient(MONGODB_URI).bot
 
 ignored_cogs = ()
 if __name__ == '__main__':

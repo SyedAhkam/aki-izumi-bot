@@ -17,8 +17,8 @@ aiohttp = "*"
 jikanpy = "*"
 igdb-api-v3 = "*"
 ago = "*"
-pymongo = "*"
 dnspython = "*"
+motor = "*"
 
 [requires]
 python_version = "3.8"
