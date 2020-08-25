@@ -19,6 +19,7 @@ igdb-api-v3 = "*"
 ago = "*"
 dnspython = "*"
 motor = "*"
+pymongo = "*"
 
 [requires]
 python_version = "3.8"
