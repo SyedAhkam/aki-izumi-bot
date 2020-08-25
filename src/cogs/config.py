@@ -13,6 +13,13 @@ def isascii(s):
     return len(s) == len(s.encode())
 
 
+def get_xp_values(xp_gain):
+    lower_limit = round(xp_gain * 0.5)
+    lower_limit_half = round(lower_limit * 0.5)
+    upper_limit = xp_gain + lower_limit_half
+    return lower_limit, upper_limit
+
+
 class Config(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -119,6 +126,12 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully set the ``verified_role`` as ``{role.name}``')
+
+    @_set.command(name='xp_gain', help='Set the xp gain for leveling system.')
+    @commands.has_permissions(administrator=True)
+    async def xp_gain(self, ctx, xp_gain=None):
+        if not xp_gain:
+            return await ctx.send('Please provide xp gain argument.')
 
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
@@ -245,8 +258,9 @@ class Config(commands.Cog):
     @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
     @commands.has_permissions(administrator=True)
     async def placeholders(self, ctx):
-        placeholders = self.config_collection.find_one(
-            {'_id': 'placeholders'})['placeholders']
+        placeholders_doc = await self.config_collection.find_one(
+            {'_id': 'placeholders'})
+        placeholders = placeholders_doc['placeholders']
 
         emoji = self.bot.get_emoji(740571420203024496)
 
