@@ -144,6 +144,21 @@ class Config(commands.Cog):
 
         await ctx.send(f'Xp gain set to be ``7``XP/min\nUsers will now gain ``{lower_limit}``-``{upper_limit}`` XP per message.')
 
+    @_set.command(name='pm_requests_role', help='Set the role to be pinged in pm commands.')
+    @commands.has_permissions(administrator=True)
+    async def pm_requests_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'partnership'},
+            {'$set': {
+                'pm_requests_role': role.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set ``pm_requests_role`` to ``{role.name}``')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
