@@ -133,6 +133,17 @@ class Config(commands.Cog):
         if not xp_gain:
             return await ctx.send('Please provide xp gain argument.')
 
+        lower_limit, upper_limit = get_xp_values(int(xp_gain))
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'levels'},
+            {'$set': {
+                'xp_gain': int(xp_gain)
+            }}
+        )
+
+        await ctx.send(f'Xp gain set to be ``7``XP/min\nUsers will now gain ``{lower_limit}``-``{upper_limit}`` XP per message.')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
