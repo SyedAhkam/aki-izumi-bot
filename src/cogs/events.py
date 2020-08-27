@@ -223,6 +223,7 @@ class Events(commands.Cog):
         user_level_doc = await self.levels_collection.find_one({'_id': message.author.id})
         current_xp = user_level_doc['xp']
         current_level = user_level_doc['level']
+        ctx = await self.bot.get_context(message)
 
         next_level = current_level + 1
         if current_xp > get_next_level_xp(next_level):
