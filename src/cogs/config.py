@@ -159,6 +159,21 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully set ``pm_requests_role`` to ``{role.name}``')
 
+    @_set.command(name='leveling_channel', help='Set the channel to be used for leveling.')
+    @commands.has_permissions(administrator=True)
+    async def leveling_channel(self, ctx, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'levels'},
+            {'$set': {
+                'leveling_channel': channel.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``leveling_channel`` as ``{channel.name}``')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
