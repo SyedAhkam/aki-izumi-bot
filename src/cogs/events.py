@@ -243,7 +243,7 @@ class Events(commands.Cog):
                 f'Congrats! You\'ve leveled up to level {next_level}.', 'Level up!', ctx)
 
             embed.set_footer(text=message.guild.name)
-            embed.set_thumbnail(url=message.author.author_url)
+            embed.set_thumbnail(url=message.author.avatar_url)
 
             await leveling_channel.send(content=message.author.mention, embed=embed)
 
