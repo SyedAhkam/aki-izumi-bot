@@ -259,7 +259,7 @@ class Levels(commands.Cog):
 
     @commands.command(name='ignore_channel_xp', help='Make the bot ignore a channel for xp.')
     @commands.has_permissions(administrator=True)
-    async def modifyxp(self, ctx, channel: commands.TextChannelConverter = None):
+    async def ignore_channel_xp(self, ctx, channel: commands.TextChannelConverter = None):
         if not channel:
             return await ctx.send('Please provide a channel.')
 
