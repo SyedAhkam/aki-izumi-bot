@@ -1,10 +1,13 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 from jikanpy import AioJikan
+from ago import human
 
 import discord
 import os
 import datetime
 import aiohttp
+import dateparser
+import embeds
 
 jikan = AioJikan()
 
@@ -20,6 +23,30 @@ class Utilities(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.reminders_collection = bot.db.reminders
+        self.handle_reminders.start()
+
+    @tasks.loop(seconds=60.0)
+    async def handle_reminders(self):
+        all_reminders_docs = await self.reminders_collection.find({}).to_list(None)
+        for reminder_doc in all_reminders_docs:
+            current_time = datetime.datetime.now().timestamp()
+
+            reminder_time = reminder_doc['when']
+
+            #TODO: fix bug and check if this logic is really good
+            if (current_time - reminder_time) >= 0:
+                user = self.bot.get_user(reminder_doc['user_id'])
+                query = reminder_doc['to_be_reminded']
+                jump_url = reminder_doc['jump_url']
+                embed = embeds.blank()
+                embed.set_author(name='Reminder!',
+                                 icon_url=self.bot.user.avatar_url)
+                embed.description = query
+                embed.add_field(name='Jump!', value=f'[Click me!]({jump_url})')
+                await user.send(embed=embed)
+
+                await self.reminders_collection.delete_one({'_id': reminder_doc['_id']})
 
     @commands.command(name='anime', help='Get information about a specific anime.')
     async def anime(self, ctx, *, anime_name=None):
@@ -85,6 +112,25 @@ class Utilities(commands.Cog):
                         value=end_datetime_string, inline=True)
 
         await ctx.send(embed=embed)
+
+    @commands.command(name='remind', aliases=['remindme'], help='Reminds you of something after a certain amount of time.')
+    async def remind(self, ctx, when, *, query):
+        datetime_parsed = dateparser.parse(when)
+
+        if not datetime_parsed:
+            return await ctx.send('The time you provided is invalid.')
+
+        humanized_datetime = human(
+            datetime_parsed.timestamp(), past_tense='{}', future_tense='{}')
+
+        await self.reminders_collection.insert_one({
+            'when': datetime_parsed.timestamp(),
+            'to_be_reminded': query,
+            'user_id': ctx.author.id,
+            'jump_url': ctx.message.jump_url
+        })
+
+        await ctx.send(f'Done! I\'ll remind you about: *{query}* in {humanized_datetime}')
 
 
 def setup(bot):
