@@ -250,6 +250,45 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully added ``{trigger_word}`` with ``{len(emojis)}`` emojis to ``auto_react`` list.')
 
+    @add.command(name='level_msg', help='Add a level message to be sent along with their coresponding levelup.')
+    @commands.has_permissions(administrator=True)
+    async def level_msg(self, ctx, level: int = None, *, message=None):
+        if not level:
+            return await ctx.send('Please provide a level.')
+        if not message:
+            return await ctx.send('Please provide a message.')
+
+        self.config_collection.find_one_and_update(
+            {'_id': 'levels'},
+            {'$push': {
+                'level_messages': {
+                    'level': level,
+                    'message': message
+                }
+            }}
+        )
+
+        await ctx.send(f'Successfully added message for level``{level}``: ```\n{message}\n```')
+
+    @add.command(name='level_role', help='Add a level role to be added to the user when they reach a certain level.')
+    @commands.has_permissions(administrator=True)
+    async def level_role(self, ctx, level: int = None, role: commands.RoleConverter = None):
+        if not level:
+            return await ctx.send('Please provide a level.')
+        if not role:
+            return await ctx.send('Please provide a role.')
+        self.config_collection.find_one_and_update(
+            {'_id': 'levels'},
+            {'$push': {
+                'level_roles': {
+                    'level': level,
+                    'role_id': role.id
+                }
+            }}
+        )
+
+        await ctx.send(f'Successfully added the role ``{role.name}`` to be given on level ``{level}``')
+
     @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
     async def remove(self, ctx):
         commands = self.remove.commands

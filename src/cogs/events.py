@@ -239,8 +239,25 @@ class Events(commands.Cog):
             leveling_channel = message.guild.get_channel(
                 xp_config_doc['leveling_channel'])
 
+            # check if a leveling message is set
+            level_messages = xp_config_doc['level_messages']
+            level_msg = [x for x in level_messages if x['level'] == next_level]
+
+            # check if we need to give them a role
+
+            level_roles = xp_config_doc['level_roles']
+            level_role = [x for x in level_roles if x['level'] == next_level]
+
+            if level_role:
+                role_obj = message.guild.get_role(level_role[0]['role_id'])
+                await message.author.add_roles(role_obj)
+
             embed = embeds.normal(
-                f'Congrats! You\'ve leveled up to level {next_level}.', 'Level up!', ctx)
+                level_msg[0][
+                    'message'] if level_msg else f'Congrats! You\'ve leveled up to level {next_level}.',
+                'Level up!',
+                ctx
+            )
 
             embed.set_footer(text=message.guild.name)
             embed.set_thumbnail(url=message.author.avatar_url)

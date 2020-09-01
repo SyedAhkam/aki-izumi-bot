@@ -9,9 +9,17 @@ import embeds
 color_converter = commands.ColourConverter()
 
 
-def get_next_level_xp(level):
+def xp_from_level(level):
     xp = 5*(int(level)**2)+50*int(level)+100
     return xp
+
+
+async def level_from_xp(xp: int):
+    level = 0
+    while True:
+        if xp >= xp_from_level(level) and xp < xp_from_level(level + 1):
+            return level
+        level += 1
 
 
 def create_thumbnail(avatar_img, bg_img):
@@ -61,7 +69,7 @@ def generate_rank_img(user_avatar, bg_color, user, xp_doc, user_rank):
         '../assets/rank_progressbar_bg.png').convert('RGB')
 
     current_xp = xp_doc['xp']
-    required_xp_for_next_level = get_next_level_xp(xp_doc['level'] + 1)
+    required_xp_for_next_level = xp_from_level(xp_doc['level'] + 1)
 
     with Image.new('RGB', (400, 100), color=bg_color.value) as bg_img:
 
@@ -181,9 +189,14 @@ class Levels(commands.Cog):
         self.config_collection = bot.db.config
 
     @commands.command()
-    async def test(self, ctx, level: int):
-        level_xp = get_next_level_xp(level)
+    async def calculate_xp(self, ctx, level: int):
+        level_xp = xp_from_level(level)
         await ctx.send(level_xp)
+
+    @commands.command()
+    async def calculate_level(self, ctx, xp: int):
+        level = await level_from_xp(xp)
+        await ctx.send(level)
 
     @commands.command(name='rank', help='Check your current xp and level')
     async def rank(self, ctx, user: commands.MemberConverter = None):
@@ -230,30 +243,72 @@ class Levels(commands.Cog):
 
     @commands.command(name='modifyxp', help='Add or remove xp from a user')
     @commands.has_permissions(administrator=True)
-    async def modifyxp(self, ctx, action=None, quantity=None, user: commands.MemberConverter = None):
+    async def modifyxp(self, ctx, action=None, xp=None, user: commands.MemberConverter = None):
         if not action:
             return await ctx.send('Please provide an action like ``add/remove``.')
-        if not quantity:
-            return await ctx.send('Please provide a quantity.')
+        if not xp:
+            return await ctx.send('Please provide a xp.')
         if not user:
             return await ctx.send('Please provide a user.')
 
+        user_xp_doc = await self.levels_collection.find_one({'_id': user.id})
+
         if action == 'add':
-            await self.levels_collection.find_one_and_update(
-                {'_id': ctx.author.id},
-                {'$inc': {
-                    'xp': int(quantity)
-                }}
-            )
-            await ctx.send(f'Added ``{quantity}`` to {user.name}\'s xp.')
+
+            level_after_adding = await level_from_xp(int(xp) + user_xp_doc['xp'])
+
+            if level_after_adding > user_xp_doc['level']:
+                await self.levels_collection.find_one_and_update(
+                    {'_id': user.id},
+                    {
+                        '$inc': {
+                            'xp': int(xp)
+                        },
+                        '$set': {
+                            'level': level_after_adding
+                        }
+                    }
+                )
+                await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp. They are now level {level_after_adding}.')
+            else:
+                await self.levels_collection.find_one_and_update(
+                    {'_id': user.id},
+                    {
+                        '$inc': {
+                            'xp': int(xp)
+                        },
+                    }
+                )
+                await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp.')
+
         elif action == 'remove':
-            await self.levels_collection.find_one_and_update(
-                {'_id': ctx.author.id},
-                {'$inc': {
-                    'xp': - int(quantity)
-                }}
-            )
-            await ctx.send(f'Removed ``{quantity}`` from {user.name}\'s xp.')
+            level_after_removing = await level_from_xp(user_xp_doc['xp'] - int(xp))
+
+            if level_after_removing < user_xp_doc['level']:
+                await self.levels_collection.find_one_and_update(
+                    {'_id': user.id},
+                    {
+                        '$inc': {
+                            'xp': - int(xp)
+                        },
+                        '$set': {
+                            'level': level_after_removing
+                        }
+                    }
+                )
+
+                await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp. The are now level {level_after_removing}.')
+
+            else:
+                await self.levels_collection.find_one_and_update(
+                    {'_id': user.id},
+                    {
+                        '$inc': {
+                            'xp': - int(xp)
+                        },
+                    }
+                )
+                await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp.')
         else:
             await ctx.send('Invalid action.')
 
