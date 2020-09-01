@@ -34,7 +34,7 @@ class Utilities(commands.Cog):
 
             reminder_time = reminder_doc['when']
 
-            #TODO: fix bug and check if this logic is really good
+            # TODO: fix bug and check if this logic is really good
             if (current_time - reminder_time) >= 0:
                 user = self.bot.get_user(reminder_doc['user_id'])
                 query = reminder_doc['to_be_reminded']
