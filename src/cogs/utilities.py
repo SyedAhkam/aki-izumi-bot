@@ -3,9 +3,7 @@ from jikanpy import AioJikan
 from ago import human
 
 import discord
-import os
 import datetime
-import aiohttp
 import dateparser
 import embeds
 

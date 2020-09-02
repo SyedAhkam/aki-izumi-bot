@@ -1,6 +1,4 @@
 from discord.ext import commands, tasks
-
-import os
 import random
 import discord
 import embeds
