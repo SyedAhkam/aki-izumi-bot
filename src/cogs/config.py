@@ -31,16 +31,9 @@ class Config(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def _set(self, ctx):
         commands = self._set.commands
-        command_names = [x.name for x in commands]
-
         emoji = self.bot.get_emoji(740571420203024496)
 
-        description = ''
-        for command in command_names:
-            to_be_added = f'{str(emoji)} {command}\n'
-            description += to_be_added
-
-        embed = embeds.normal(description, 'Available commands', ctx)
+        embed = embeds.list_commands_in_group(commands, emoji, ctx)
 
         await ctx.send(embed=embed)
 
@@ -178,16 +171,9 @@ class Config(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
         commands = self.add.commands
-        command_names = [x.name for x in commands]
-
         emoji = self.bot.get_emoji(740571420203024496)
 
-        description = ''
-        for command in command_names:
-            to_be_added = f'{str(emoji)} {command}\n'
-            description += to_be_added
-
-        embed = embeds.normal(description, 'Available commands', ctx)
+        embed = embeds.list_commands_in_group(commands, emoji, ctx)
 
         await ctx.send(embed=embed)
 
@@ -292,16 +278,9 @@ class Config(commands.Cog):
     @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
     async def remove(self, ctx):
         commands = self.remove.commands
-        command_names = [x.name for x in commands]
-
         emoji = self.bot.get_emoji(740571420203024496)
 
-        description = ''
-        for command in command_names:
-            to_be_added = f'{str(emoji)} {command}\n'
-            description += to_be_added
-
-        embed = embeds.normal(description, 'Available commands', ctx)
+        embed = embeds.list_commands_in_group(commands, emoji, ctx)
 
         await ctx.send(embed=embed)
 

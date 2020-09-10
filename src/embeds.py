@@ -61,3 +61,12 @@ def custom(title, color, description, timestamp, url):
 
 def get_embed_from_dict(dict):
     return discord.Embed.from_dict(dict)
+
+def list_commands_in_group(commands, emoji, ctx):
+    command_names = [x.name for x in commands]
+    description = ''
+    for command in command_names:
+        to_be_added = f'{str(emoji)} {command}\n'
+        description += to_be_added
+
+    return normal(description, 'Available commands', ctx)

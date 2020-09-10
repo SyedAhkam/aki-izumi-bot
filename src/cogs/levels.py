@@ -316,16 +316,9 @@ class Levels(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def modifyxp(self, ctx):
         commands = self.modifyxp.commands
-        command_names = [x.name for x in commands]
-
         emoji = self.bot.get_emoji(740571420203024496)
 
-        description = ''
-        for command in command_names:
-            to_be_added = f'{str(emoji)} {command}\n'
-            description += to_be_added
-
-        embed = embeds.normal(description, 'Available commands', ctx)
+        embed = embeds.list_commands_in_group(commands, emoji, ctx)
 
         await ctx.send(embed=embed)
 
@@ -403,7 +396,7 @@ class Levels(commands.Cog):
             return await ctx.send('Please provide a user.')
 
         user_xp_doc = await self.levels_collection.find_one({'_id': user.id})
-        
+
         level_after_removing = await level_from_xp(user_xp_doc['xp'] - int(xp))
 
         if level_after_removing < user_xp_doc['level']:
