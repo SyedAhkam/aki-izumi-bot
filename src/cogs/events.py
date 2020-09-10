@@ -318,7 +318,7 @@ class Events(commands.Cog):
                 trigger_name = args[0]
                 trigger_doc = await self.triggers_collection.find_one({'_id': trigger_name})
                 if trigger_doc:
-                    embed = None
+                    formatted_embed = None
                     text = None
                     if trigger_doc['embed']:
                         embed = embeds.get_embed_from_dict(trigger_doc['embed'])
