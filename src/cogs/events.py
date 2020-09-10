@@ -29,6 +29,53 @@ def get_next_level_xp(level):
 
 XpUser = collections.namedtuple('user', ['id', 'last_time_xp_gained'])
 
+def get_keys(user, guild):
+    return {
+        "user": user.name,
+        "user_mention": user.mention,
+        "user_id": user.id,
+        "user_tag": f'{user.name}#{user.discriminator}',
+        "user_color": user.color,
+        "user_avatar_url": user.avatar_url,
+        "server": guild.name,
+        "server_members": len(guild.members),
+        "server_icon_url": guild.icon_url
+    }
+
+def format_string_with_keys(string, keys):
+    return string.format(**keys)
+
+async def format_embed(user, guild, embed):
+    keys = get_keys(user, guild)
+
+    if embed.title:
+        embed.title = format_string_with_keys(embed.title, keys)
+
+    if embed.description:
+        embed.description = format_string_with_keys(embed.description, keys)
+
+    if embed.footer:
+        footer_text = format_string_with_keys(embed.footer.text, keys)
+        embed.set_footer(text=footer_text, icon_url=embed.footer.icon_url)
+
+    if embed.author:
+        author_name = format_string_with_keys(embed.author.name, keys)
+        embed.set_author(name=author_name, url=embed.author.url,
+                         icon_url=embed.author.icon_url)
+
+    if embed.fields:
+        new_fields = []
+        for field in embed.fields:
+            formatted_field_name = format_string_with_keys(field.name, keys)
+            formatted_field_value = format_string_with_keys(field.value, keys)
+            new_fields.append((formatted_field_name, formatted_field_value))
+
+        embed.clear_fields()
+
+        for name, value in new_fields:
+            embed.add_field(name=name, value=value)
+
+    return embed
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -38,6 +85,7 @@ class Events(commands.Cog):
         self.config_collection = bot.db.config
         self.nicknames_collection = bot.db.nicknames
         self.levels_collection = bot.db.levels
+        self.triggers_collection = bot.db.triggers
         self.recently_leveled_up = []
         self.handle_recently_leveled_up.start()
 
@@ -261,6 +309,27 @@ class Events(commands.Cog):
             embed.set_thumbnail(url=message.author.avatar_url)
 
             await leveling_channel.send(content=message.author.mention, embed=embed)
+
+        # triggers
+        message_splitted = message.content.split()
+        if message_splitted[0] == 'uwu' or message_splitted[0] == 'a!':
+            args = message.content.split()[1:]
+            try:
+                trigger_name = args[0]
+                trigger_doc = await self.triggers_collection.find_one({'_id': trigger_name})
+                if trigger_doc:
+                    embed = None
+                    text = None
+                    if trigger_doc['embed']:
+                        embed = embeds.get_embed_from_dict(trigger_doc['embed'])
+                        formatted_embed = await format_embed(message.author, message.guild, embed)
+                    if trigger_doc['text']:
+                        text = trigger_doc['text']
+
+                    await message.channel.send(embed=formatted_embed, content=text)
+
+            except KeyError:
+                pass
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):

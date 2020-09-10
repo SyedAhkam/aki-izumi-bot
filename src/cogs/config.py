@@ -26,6 +26,8 @@ class Config(commands.Cog):
         self.config_collection = bot.db.config
         self.nicknames_collection = bot.db.nicknames
         self.auto_react_collection = bot.db.auto_react
+        self.triggers_collection = bot.db.triggers
+        self.embeds_collection = bot.db.embeds
 
     @commands.group(name='set', help='Group of commands to set some values required by bot.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
@@ -274,6 +276,31 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully added the role ``{role.name}`` to be given on level ``{level}``')
+
+    @add.command(name='trigger', help='Add a message or embed to be sent by the bot when you send the trigger')
+    @commands.has_permissions(administrator=True)
+    async def trigger(self, ctx, trigger=None, *, message_or_embed=None):
+        if not trigger:
+            return await ctx.send('Please provide a trigger.')
+        if not message_or_embed:
+            return await ctx.send('Please provide a message or embed.\nYou can use this syntax to refer to embeds: ``{embed: <embed_name>}``')
+
+        embed = await embeds.get_embed_if_key_exists(message_or_embed, self.embeds_collection)
+        if embed:
+            remaining_text_list = message_or_embed.replace(embed[1] + '}', '').replace('{embed:', '').split()
+            self.triggers_collection.insert_one({
+                '_id': trigger,
+                'embed': embed[0].to_dict(),
+                'text': ' '.join(remaining_text_list) if remaining_text_list else None
+            })
+        else:
+            self.triggers_collection.insert_one({
+                '_id': trigger,
+                'embed': None,
+                'text': message_or_embed
+            })
+
+        await ctx.send(f'Successfully added ``{trigger}`` to triggers list')
 
     @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
     async def remove(self, ctx):

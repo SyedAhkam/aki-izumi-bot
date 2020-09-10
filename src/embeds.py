@@ -70,3 +70,14 @@ def list_commands_in_group(commands, emoji, ctx):
         description += to_be_added
 
     return normal(description, 'Available commands', ctx)
+
+async def get_embed_if_key_exists(string_containing_key, embeds_collection):
+    string_splitted = string_containing_key.split()
+
+    for i, word in enumerate(string_splitted):
+        if '{embed:' == word:
+            embed_name = string_splitted[i + 1][:-1]
+            embed_doc = await embeds_collection.find_one({'_id': embed_name})
+            if embed_doc:
+                return (get_embed_from_dict(embed_doc['embed']), embed_name)
+    return None
