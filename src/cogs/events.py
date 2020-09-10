@@ -29,6 +29,7 @@ def get_next_level_xp(level):
 
 XpUser = collections.namedtuple('user', ['id', 'last_time_xp_gained'])
 
+
 def get_keys(user, guild):
     return {
         "user": user.name,
@@ -42,8 +43,10 @@ def get_keys(user, guild):
         "server_icon_url": guild.icon_url
     }
 
+
 def format_string_with_keys(string, keys):
     return string.format(**keys)
+
 
 async def format_embed(user, guild, embed):
     keys = get_keys(user, guild)
@@ -76,6 +79,7 @@ async def format_embed(user, guild, embed):
             embed.add_field(name=name, value=value)
 
     return embed
+
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -321,7 +325,8 @@ class Events(commands.Cog):
                     embed = None
                     text = None
                     if trigger_doc['embed']:
-                        embed = embeds.get_embed_from_dict(trigger_doc['embed'])
+                        embed = embeds.get_embed_from_dict(
+                            trigger_doc['embed'])
                         formatted_embed = await format_embed(message.author, message.guild, embed)
                     if trigger_doc['text']:
                         text = trigger_doc['text']

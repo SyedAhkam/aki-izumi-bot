@@ -287,7 +287,8 @@ class Config(commands.Cog):
 
         embed = await embeds.get_embed_if_key_exists(message_or_embed, self.embeds_collection)
         if embed:
-            remaining_text_list = message_or_embed.replace(embed[1] + '}', '').replace('{embed:', '').split()
+            remaining_text_list = message_or_embed.replace(
+                embed[1] + '}', '').replace('{embed:', '').split()
             self.triggers_collection.insert_one({
                 '_id': trigger,
                 'embed': embed[0].to_dict(),

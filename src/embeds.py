@@ -62,6 +62,7 @@ def custom(title, color, description, timestamp, url):
 def get_embed_from_dict(dict):
     return discord.Embed.from_dict(dict)
 
+
 def list_commands_in_group(commands, emoji, ctx):
     command_names = [x.name for x in commands]
     description = ''
@@ -70,6 +71,7 @@ def list_commands_in_group(commands, emoji, ctx):
         description += to_be_added
 
     return normal(description, 'Available commands', ctx)
+
 
 async def get_embed_if_key_exists(string_containing_key, embeds_collection):
     string_splitted = string_containing_key.split()
