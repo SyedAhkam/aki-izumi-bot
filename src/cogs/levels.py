@@ -241,76 +241,196 @@ class Levels(commands.Cog):
                          timeout=60.0, clear_reactions_after=True)
         await menu.start(ctx)
 
-    @commands.command(name='modifyxp', help='Add or remove xp from a user')
+    # @commands.command(name='modifyxp', help='Add or remove xp from a user')
+    # @commands.has_permissions(administrator=True)
+    # async def modifyxp(self, ctx, action=None, xp=None, user: commands.MemberConverter = None):
+    #     if not action:
+    #         return await ctx.send('Please provide an action like ``add/remove``.')
+    #     if not xp:
+    #         return await ctx.send('Please provide a xp.')
+    #     if not user:
+    #         return await ctx.send('Please provide a user.')
+    #
+    #     user_xp_doc = await self.levels_collection.find_one({'_id': user.id})
+    #
+        # if action == 'add':
+        #
+        #     level_after_adding = await level_from_xp(int(xp) + user_xp_doc['xp'])
+        #
+        #     if level_after_adding > user_xp_doc['level']:
+        #         await self.levels_collection.find_one_and_update(
+        #             {'_id': user.id},
+        #             {
+        #                 '$inc': {
+        #                     'xp': int(xp)
+        #                 },
+        #                 '$set': {
+        #                     'level': level_after_adding
+        #                 }
+        #             }
+        #         )
+        #         await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp. They are now level {level_after_adding}.')
+        #     else:
+        #         await self.levels_collection.find_one_and_update(
+        #             {'_id': user.id},
+        #             {
+        #                 '$inc': {
+        #                     'xp': int(xp)
+        #                 },
+        #             }
+        #         )
+        #         await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp.')
+    #
+    #     elif action == 'remove':
+            # level_after_removing = await level_from_xp(user_xp_doc['xp'] - int(xp))
+            #
+            # if level_after_removing < user_xp_doc['level']:
+            #     await self.levels_collection.find_one_and_update(
+            #         {'_id': user.id},
+            #         {
+            #             '$inc': {
+            #                 'xp': - int(xp)
+            #             },
+            #             '$set': {
+            #                 'level': level_after_removing
+            #             }
+            #         }
+            #     )
+            #
+            #     await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp. The are now level {level_after_removing}.')
+            #
+            # else:
+            #     await self.levels_collection.find_one_and_update(
+            #         {'_id': user.id},
+            #         {
+            #             '$inc': {
+            #                 'xp': - int(xp)
+            #             },
+            #         }
+            #     )
+            #     await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp.')
+    #     else:
+    #         await ctx.send('Invalid action.')
+
+    @commands.group(name='modifyxp', help='Group of commands for modifying a user\'s xp', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
-    async def modifyxp(self, ctx, action=None, xp=None, user: commands.MemberConverter = None):
-        if not action:
-            return await ctx.send('Please provide an action like ``add/remove``.')
+    async def modifyxp(self, ctx):
+        commands = self.modifyxp.commands
+        command_names = [x.name for x in commands]
+
+        emoji = self.bot.get_emoji(740571420203024496)
+
+        description = ''
+        for command in command_names:
+            to_be_added = f'{str(emoji)} {command}\n'
+            description += to_be_added
+
+        embed = embeds.normal(description, 'Available commands', ctx)
+
+        await ctx.send(embed=embed)
+
+    @modifyxp.command(name='add', help='Add a certain amount of xp to a user.')
+    @commands.has_permissions(administrator=True)
+    async def add(self, ctx, xp: int= None, user: commands.MemberConverter = None):
         if not xp:
-            return await ctx.send('Please provide a xp.')
+            return await ctx.send('Please provide a xp amount to be added.')
         if not user:
             return await ctx.send('Please provide a user.')
 
         user_xp_doc = await self.levels_collection.find_one({'_id': user.id})
+        level_config_doc = await self.config_collection.find_one({'_id': 'levels'})
 
-        if action == 'add':
+        leveling_channel = ctx.guild.get_channel(level_config_doc['leveling_channel'])
 
-            level_after_adding = await level_from_xp(int(xp) + user_xp_doc['xp'])
+        level_after_adding = await level_from_xp(int(xp) + user_xp_doc['xp'])
 
-            if level_after_adding > user_xp_doc['level']:
-                await self.levels_collection.find_one_and_update(
-                    {'_id': user.id},
-                    {
-                        '$inc': {
-                            'xp': int(xp)
-                        },
-                        '$set': {
-                            'level': level_after_adding
-                        }
+        if level_after_adding > user_xp_doc['level']:
+            await self.levels_collection.find_one_and_update(
+                {'_id': user.id},
+                {
+                    '$inc': {
+                        'xp': int(xp)
+                    },
+                    '$set': {
+                        'level': level_after_adding
                     }
-                )
-                await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp. They are now level {level_after_adding}.')
-            else:
-                await self.levels_collection.find_one_and_update(
-                    {'_id': user.id},
-                    {
-                        '$inc': {
-                            'xp': int(xp)
-                        },
-                    }
-                )
-                await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp.')
+                }
+            )
 
-        elif action == 'remove':
-            level_after_removing = await level_from_xp(user_xp_doc['xp'] - int(xp))
+            # check if a leveling message is set
+            level_messages = level_config_doc['level_messages']
+            level_msg = [x for x in level_messages if x['level'] == level_after_adding]
 
-            if level_after_removing < user_xp_doc['level']:
-                await self.levels_collection.find_one_and_update(
-                    {'_id': user.id},
-                    {
-                        '$inc': {
-                            'xp': - int(xp)
-                        },
-                        '$set': {
-                            'level': level_after_removing
-                        }
-                    }
-                )
+            # check if we need to give them a role
 
-                await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp. The are now level {level_after_removing}.')
+            level_roles = level_config_doc['level_roles']
+            level_role = [x for x in level_roles if x['level'] == level_after_adding]
 
-            else:
-                await self.levels_collection.find_one_and_update(
-                    {'_id': user.id},
-                    {
-                        '$inc': {
-                            'xp': - int(xp)
-                        },
-                    }
-                )
-                await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp.')
+            if level_role:
+                role_obj = ctx.guild.get_role(level_role[0]['role_id'])
+                await user.add_roles(role_obj)
+
+            embed = embeds.normal(
+                level_msg[0][
+                    'message'] if level_msg else f'Congrats! You\'ve leveled up to level {level_after_adding}.',
+                'Level up!',
+                ctx
+            )
+
+            embed.set_footer(text=ctx.guild.name)
+            embed.set_thumbnail(url=user.avatar_url)
+
+            await leveling_channel.send(content=user.mention, embed=embed)
+
+            await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp. They are now level {level_after_adding}.')
         else:
-            await ctx.send('Invalid action.')
+            await self.levels_collection.find_one_and_update(
+                {'_id': user.id},
+                {
+                    '$inc': {
+                        'xp': int(xp)
+                    },
+                }
+            )
+            await ctx.send(f'Added ``{xp}`` to {user.name}\'s xp.')
+
+    @modifyxp.command(name='remove', help='Remove a certain amount of xp from a user.')
+    @commands.has_permissions(administrator=True)
+    async def remove(self, ctx, xp: int= None, user: commands.MemberConverter = None):
+        if not xp:
+            return await ctx.send('Please provide a xp amount to be added.')
+        if not user:
+            return await ctx.send('Please provide a user.')
+
+        user_xp_doc = await self.levels_collection.find_one({'_id': user.id})
+        
+        level_after_removing = await level_from_xp(user_xp_doc['xp'] - int(xp))
+
+        if level_after_removing < user_xp_doc['level']:
+            await self.levels_collection.find_one_and_update(
+                {'_id': user.id},
+                {
+                    '$inc': {
+                        'xp': - int(xp)
+                    },
+                    '$set': {
+                        'level': level_after_removing
+                    }
+                }
+            )
+
+            await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp. The are now level {level_after_removing}.')
+
+        else:
+            await self.levels_collection.find_one_and_update(
+                {'_id': user.id},
+                {
+                    '$inc': {
+                        'xp': - int(xp)
+                    },
+                }
+            )
+            await ctx.send(f'Removed ``{xp}`` from {user.name}\'s xp.')
 
     @commands.command(name='ignore_channel_xp', help='Make the bot ignore a channel for xp.')
     @commands.has_permissions(administrator=True)
