@@ -11,7 +11,7 @@ load_dotenv()
 
 
 def is_env_dev():
-    return bool(os.getenv('DEVELOPMENT'))
+    return os.getenv('DEV') == 'True'
 
 
 if is_env_dev():
