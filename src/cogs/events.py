@@ -230,89 +230,89 @@ class Events(commands.Cog):
                 await message.delete()
 
         # xp
-        user_exists = await is_document_exists(self.levels_collection, message.author.id)
-        if not user_exists:
-            await self.levels_collection.insert_one({
-                '_id': message.author.id,
-                'xp': 0,
-                'level': 0
-            })
+#         user_exists = await is_document_exists(self.levels_collection, message.author.id)
+#         if not user_exists:
+#             await self.levels_collection.insert_one({
+#                 '_id': message.author.id,
+#                 'xp': 0,
+#                 'level': 0
+#             })
 
-        # xp cooldown
+#         # xp cooldown
 
-        is_recently_leveled_up = [
-            x.id == message.author.id for x in self.recently_leveled_up
-        ]
-        if not is_recently_leveled_up:
+#         is_recently_leveled_up = [
+#             x.id == message.author.id for x in self.recently_leveled_up
+#         ]
+#         if not is_recently_leveled_up:
 
-            xp_config_doc = await self.config_collection.find_one({'_id': 'levels'})
+#             xp_config_doc = await self.config_collection.find_one({'_id': 'levels'})
 
-            if not message.channel in xp_config_doc['ignored_channels']:
+#             if not message.channel in xp_config_doc['ignored_channels']:
 
-                lower_limit, upper_limit = get_xp_values(
-                    xp_config_doc['xp_gain'])
-                randomly_selected_xp = random.randint(lower_limit, upper_limit)
+#                 lower_limit, upper_limit = get_xp_values(
+#                     xp_config_doc['xp_gain'])
+#                 randomly_selected_xp = random.randint(lower_limit, upper_limit)
 
-                await self.levels_collection.find_one_and_update(
-                    {'_id': message.author.id},
-                    {'$inc': {
-                        'xp': randomly_selected_xp
-                    }}
-                )
+#                 await self.levels_collection.find_one_and_update(
+#                     {'_id': message.author.id},
+#                     {'$inc': {
+#                         'xp': randomly_selected_xp
+#                     }}
+#                 )
 
-                tuple_to_be_added = XpUser(
-                    message.author.name, datetime.datetime.now().timestamp())
+#                 tuple_to_be_added = XpUser(
+#                     message.author.name, datetime.datetime.now().timestamp())
 
-                self.recently_leveled_up.append(tuple_to_be_added)
+#                 self.recently_leveled_up.append(tuple_to_be_added)
 
-        else:
-            pass
+#         else:
+#             pass
 
-        # check if we need to level them up
+#         # check if we need to level them up
 
-        user_level_doc = await self.levels_collection.find_one({'_id': message.author.id})
-        current_xp = user_level_doc['xp']
-        current_level = user_level_doc['level']
-        ctx = await self.bot.get_context(message)
+#         user_level_doc = await self.levels_collection.find_one({'_id': message.author.id})
+#         current_xp = user_level_doc['xp']
+#         current_level = user_level_doc['level']
+#         ctx = await self.bot.get_context(message)
 
-        next_level = current_level + 1
-        if current_xp > get_next_level_xp(next_level):
+#         next_level = current_level + 1
+#         if current_xp > get_next_level_xp(next_level):
 
-            await self.levels_collection.find_one_and_update(
-                {'_id': message.author.id},
-                {'$set': {
-                    'level': next_level
-                }}
-            )
+#             await self.levels_collection.find_one_and_update(
+#                 {'_id': message.author.id},
+#                 {'$set': {
+#                     'level': next_level
+#                 }}
+#             )
 
-            xp_config_doc = await self.config_collection.find_one({'_id': 'levels'})
-            leveling_channel = message.guild.get_channel(
-                xp_config_doc['leveling_channel'])
+#             xp_config_doc = await self.config_collection.find_one({'_id': 'levels'})
+#             leveling_channel = message.guild.get_channel(
+#                 xp_config_doc['leveling_channel'])
 
-            # check if a leveling message is set
-            level_messages = xp_config_doc['level_messages']
-            level_msg = [x for x in level_messages if x['level'] == next_level]
+#             # check if a leveling message is set
+#             level_messages = xp_config_doc['level_messages']
+#             level_msg = [x for x in level_messages if x['level'] == next_level]
 
-            # check if we need to give them a role
+#             # check if we need to give them a role
 
-            level_roles = xp_config_doc['level_roles']
-            level_role = [x for x in level_roles if x['level'] == next_level]
+#             level_roles = xp_config_doc['level_roles']
+#             level_role = [x for x in level_roles if x['level'] == next_level]
 
-            if level_role:
-                role_obj = message.guild.get_role(level_role[0]['role_id'])
-                await message.author.add_roles(role_obj)
+#             if level_role:
+#                 role_obj = message.guild.get_role(level_role[0]['role_id'])
+#                 await message.author.add_roles(role_obj)
 
-            embed = embeds.normal(
-                level_msg[0][
-                    'message'] if level_msg else f'Congrats! You\'ve leveled up to level {next_level}.',
-                'Level up!',
-                ctx
-            )
+#             embed = embeds.normal(
+#                 level_msg[0][
+#                     'message'] if level_msg else f'Congrats! You\'ve leveled up to level {next_level}.',
+#                 'Level up!',
+#                 ctx
+#             )
 
-            embed.set_footer(text=message.guild.name)
-            embed.set_thumbnail(url=message.author.avatar_url)
+#             embed.set_footer(text=message.guild.name)
+#             embed.set_thumbnail(url=message.author.avatar_url)
 
-            await leveling_channel.send(content=message.author.mention, embed=embed)
+#             await leveling_channel.send(content=message.author.mention, embed=embed)
 
         # triggers
         message_splitted = message.content.split()
