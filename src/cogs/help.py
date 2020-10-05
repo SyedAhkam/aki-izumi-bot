@@ -33,7 +33,7 @@ class HelpMenu(ListPageSource):
         len_data = len(self.entries)
 
         menu_embed = discord.Embed(
-            timestamp=datetime.datetime.utcnow(), color=0xb5fffd)
+            timestamp=datetime.datetime.utcnow(), color=0xdbb8ff)
         menu_embed.set_author(
             name='Help', url=discord.Embed.Empty, icon_url=self.ctx.bot.user.avatar_url)
 
@@ -83,7 +83,7 @@ class Help(commands.Cog):
     async def help(self, ctx, *, command_or_cog=None):
 
         help_embed = discord.Embed(
-            timestamp=datetime.datetime.utcnow(), color=0xb5fffd)
+            timestamp=datetime.datetime.utcnow(), color=0xdbb8ff)
         help_embed.set_author(
             name='Help', url=discord.Embed.Empty, icon_url=ctx.bot.user.avatar_url)
         help_embed.set_footer(
