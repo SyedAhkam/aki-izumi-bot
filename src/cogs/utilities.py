@@ -89,7 +89,7 @@ class Utilities(commands.Cog):
         rated = first_result['rated']
 
         embed = discord.Embed(title='My Anime List', description=synopsis,
-                              color=0xFFFFFF, timestamp=datetime.datetime.utcnow())
+                              color=0xdbb8ff, timestamp=datetime.datetime.utcnow())
 
         embed.set_footer(text='Powered by JikanAPI')
 
