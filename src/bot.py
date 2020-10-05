@@ -25,7 +25,7 @@ DOG_API_KEY = os.getenv('DOG_API_KEY')
 IGDB_API_KEY = os.getenv('IGDB_API_KEY')
 
 #annoying intents
-intents = discord.intents.default()
+intents = discord.Intents.default()
 intents.members = True
 
 if is_env_dev():
