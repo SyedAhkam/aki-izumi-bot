@@ -38,7 +38,7 @@ if is_env_dev():
 else:
     bot.db = AsyncIOMotorClient(MONGODB_URI).bot
 
-#jishaku
+# jishaku
 bot.load_extension('jishaku')
 
 ignored_cogs = ()
