@@ -1,7 +1,7 @@
 import discord
 
 colors = {
-    'normal': 0xb5fffd,
+    'normal': 0xdbb8ff,
     'error': 0xff0000,
 }
 
