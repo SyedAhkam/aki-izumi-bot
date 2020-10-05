@@ -38,6 +38,9 @@ if is_env_dev():
 else:
     bot.db = AsyncIOMotorClient(MONGODB_URI).bot
 
+#jishaku
+bot.load_extension('jishaku')
+
 ignored_cogs = ()
 if __name__ == '__main__':
     # Load the cogs in cogs directory
