@@ -24,14 +24,16 @@ CAT_API_KEY = os.getenv('CAT_API_KEY')
 DOG_API_KEY = os.getenv('DOG_API_KEY')
 IGDB_API_KEY = os.getenv('IGDB_API_KEY')
 
-#annoying intents
+# annoying intents
 intents = discord.intents.default()
 intents.members = True
 
 if is_env_dev():
-    bot = commands.Bot(command_prefix=['ab!', 'Ab!'], case_insensitive=True, intents=intents)
+    bot = commands.Bot(
+        command_prefix=['ab!', 'Ab!'], case_insensitive=True, intents=intents)
 else:
-    bot = commands.Bot(command_prefix=['a!', 'A!'], case_insensitive=True, intents=intents)
+    bot = commands.Bot(
+        command_prefix=['a!', 'A!'], case_insensitive=True, intents=intents)
 
 bot.owner_ids = [342545053169877006, 674432715088592915]
 bot.cat_api_key = CAT_API_KEY
