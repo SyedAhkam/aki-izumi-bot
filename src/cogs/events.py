@@ -225,7 +225,7 @@ class Events(commands.Cog):
                 ctx = await self.bot.get_context(message)
 
                 embed = embeds.normal(
-                    verification_doc['verification_followup_message'], 'You\'ve been verified!', ctx)
+                    verification_doc['verification_followup_message'], '**__You just got verified!__**', ctx)
                 await message.channel.send(content=message.author.mention, embed=embed)
                 await message.delete()
 
