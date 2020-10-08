@@ -354,6 +354,43 @@ class Events(commands.Cog):
 
                 await after.edit(nick=formatted_nickname)
 
+            if role_id == 758838449289035788:
+                embed = embeds.blank()
+                embed.description = '''
+                                ๑‧₊˚<:oa_kannawoah:746059883828215969> AH! A-Arigatō for donating! <:oa_uwu_juuzou:710645176879677488>
+                ˗ˏˋ･ﾟ︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶︶꒷꒦・˙˶
+
+                Thank you so much for donating to the server! <:oa_yay:710715575839752202><:oa_cheer:710645174228877365>
+
+                `The following perks will be given shortly:`
+
+                **__3+ Donation__**
+                ʚ`⛩️`・ Donator Role
+                ʚ`⛩️`・ Donation chat access (#๑₊꒰🎋。donatorsଓ°。)
+
+                **__5+ Donation__**
+                ʚ`⛩️`・ Donation role
+                ʚ`⛩️`・ Donation chat access (#๑₊꒰🎋。donatorsଓ°。)
+                ʚ`⛩️`・ 10k server currency
+
+                **__10+ Donation__**
+                ʚ`⛩️`・ Donation role
+                ʚ`⛩️`・ Donation chat access (#๑₊꒰🎋。donatorsଓ°。)
+                ʚ`⛩️`・ Ability to post in media chats
+                ʚ`⛩️`・ Media Shout out (x how ever many times you donate)
+                ʚ`⛩️`・ 20k server currency (x how ever many times you donate)
+                ʚ`⛩️`・ 10k server currency daily
+                ╰・┄・┄・┄・┄・┄・┄・┄・┄・┄・┄・┄・┄・ ʚĭɞ๑‧₊˚˖˳`⛩️🌸⛩️`꒱˙˶
+                '''
+
+                embed.set_image(url='https://media.discordapp.net/attachments/752763445455355925/759913055952830484/Donate-PixTeller.png?width=833&height=437')
+                embed.set_thumbnail(url=after.avatar_url)
+                embed.timestamp = datetime.datetime.utcnow()
+
+                donation_channel = after.guild.get_channel(697877266260164707)
+                await donation_channel.send(content=after.mention, embed=embed)
+
+
         elif len(before.roles) > len(after.roles):
 
             role_id = removed_roles[0].id
@@ -363,7 +400,6 @@ class Events(commands.Cog):
                 doc = await self.nicknames_collection.find_one({'_id': role_id})
 
                 await after.edit(nick='')
-
 
 def setup(bot):
     bot.add_cog(Events(bot))
