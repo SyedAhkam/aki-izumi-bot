@@ -336,7 +336,7 @@ class Events(commands.Cog):
 
             except KeyError:
                 pass
-        
+
         if message.content.startswith('a!'):
             try:
                 trigger_name = message.content[2:]
@@ -403,13 +403,13 @@ class Events(commands.Cog):
                 ╰・┄・┄・┄・┄・┄・┄・┄・┄・┄・┄・┄・┄・ ʚĭɞ๑‧₊˚˖˳`⛩️🌸⛩️`꒱˙˶
                 '''
 
-                embed.set_image(url='https://media.discordapp.net/attachments/752763445455355925/759913055952830484/Donate-PixTeller.png?width=833&height=437')
+                embed.set_image(
+                    url='https://media.discordapp.net/attachments/752763445455355925/759913055952830484/Donate-PixTeller.png?width=833&height=437')
                 embed.set_thumbnail(url=after.avatar_url)
                 embed.timestamp = datetime.datetime.utcnow()
 
                 donation_channel = after.guild.get_channel(697877266260164707)
                 await donation_channel.send(content=after.mention, embed=embed)
-
 
         elif len(before.roles) > len(after.roles):
 
@@ -420,6 +420,7 @@ class Events(commands.Cog):
                 doc = await self.nicknames_collection.find_one({'_id': role_id})
 
                 await after.edit(nick='')
+
 
 def setup(bot):
     bot.add_cog(Events(bot))
