@@ -46,7 +46,7 @@ else:
 # jishaku
 bot.load_extension('jishaku')
 
-ignored_cogs = ()
+ignored_cogs = ('cogs.games')
 if __name__ == '__main__':
     # Load the cogs in cogs directory
     for filename in os.listdir('./cogs'):
