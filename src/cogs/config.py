@@ -169,6 +169,21 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully set the ``leveling_channel`` as ``{channel.name}``')
 
+    @_set.command(name='triggers_prefix', help='Set the prefix to be used for triggers.')
+    @commands.has_permissions(administrator=True)
+    async def triggers_prefix(self, ctx, *, prefix):
+        if not prefix:
+            return await ctx.send('Please provide a prefix.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'triggers'},
+            {'$set': {
+                'triggers_prefix': prefix
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``triggers_prefix`` as ``{prefix}``')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):

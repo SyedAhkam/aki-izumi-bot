@@ -316,10 +316,30 @@ class Events(commands.Cog):
 
         # triggers
         message_splitted = message.content.split()
-        if message_splitted[0] == 'uwu' or message_splitted[0] == 'a!':
+        triggers_config = await self.config_collection.find_one({'_id': 'triggers'})
+        if message_splitted[0] == triggers_config['triggers_prefix']:
             args = message.content.split()[1:]
             try:
                 trigger_name = args[0]
+                trigger_doc = await self.triggers_collection.find_one({'_id': trigger_name})
+                if trigger_doc:
+                    formatted_embed = None
+                    text = None
+                    if trigger_doc['embed']:
+                        embed = embeds.get_embed_from_dict(
+                            trigger_doc['embed'])
+                        formatted_embed = await format_embed(message.author, message.guild, embed)
+                    if trigger_doc['text']:
+                        text = trigger_doc['text']
+
+                    await message.channel.send(embed=formatted_embed, content=text)
+
+            except KeyError:
+                pass
+        
+        if message.content.startswith('a!'):
+            try:
+                trigger_name = message.content[2:]
                 trigger_doc = await self.triggers_collection.find_one({'_id': trigger_name})
                 if trigger_doc:
                     formatted_embed = None
