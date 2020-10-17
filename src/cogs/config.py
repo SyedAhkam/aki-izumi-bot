@@ -184,6 +184,36 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully set the ``triggers_prefix`` as ``{prefix}``')
 
+    @_set.command(name='donation_channel', help='Set the channel to be used for donation messages.')
+    @commands.has_permissions(administrator=True)
+    async def donation_channel(self, ctx, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'donations'},
+            {'$set': {
+                'donation_channel': channel.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``donation_channel`` as ``{channel.name}``')
+    
+    @_set.command(name='donation_role', help='Set the role to be used for detecting a donation.')
+    @commands.has_permissions(administrator=True)
+    async def donation_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'donations'},
+            {'$set': {
+                'donation_role': role.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``donation_role`` as ``{role.name}``')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
