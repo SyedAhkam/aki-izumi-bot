@@ -21,7 +21,7 @@ async def is_document_exists(collection, id):
 async def convert_color(ctx, color):
     try:
         if color.lower() == 'default':
-            return await color_converter.convert(ctx, '#b5fffd')
+            return await color_converter.convert(ctx, '0xdbb8ff')
         return await color_converter.convert(ctx, color)
     except commands.BadArgument:
         return None
