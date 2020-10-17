@@ -237,7 +237,7 @@ class Config(commands.Cog):
             except TypeError:
                 emojis_to_be_saved.append(emoji.id)
 
-        is_already_exists = await is_document_exists(self.auto_react_collection, trigger_word)
+        is_already_exists = await is_document_exists(self.auto_react_collection, trigger_word.lower())
         if is_already_exists:
             await self.auto_react_collection.find_one_and_update(
                 {'_id': trigger_word.lower()},
