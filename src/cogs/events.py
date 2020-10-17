@@ -381,6 +381,8 @@ class Events(commands.Cog):
                 donation_embed_doc = await self.embeds_collection.find_one({'_id': 'donation'})
                 donation_embed = embeds.get_embed_from_dict(donation_embed_doc['embed'])
 
+                donation_embed.set_thumbnail(url=after.avatar_url)
+
                 donation_embed_formatted = await format_embed(after, after.guild, donation_embed)
 
                 donation_channel = after.guild.get_channel(donations_config['donation_channel'])
