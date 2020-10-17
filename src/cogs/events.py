@@ -337,7 +337,7 @@ class Events(commands.Cog):
 
             except KeyError:
                 pass
-        
+
         if message.content.startswith('a!'):
             try:
                 trigger_name = message.content[2:]
@@ -379,15 +379,16 @@ class Events(commands.Cog):
             donations_config = await self.config_collection.find_one({'_id': 'donations'})
             if role_id == donations_config['donation_role']:
                 donation_embed_doc = await self.embeds_collection.find_one({'_id': 'donation'})
-                donation_embed = embeds.get_embed_from_dict(donation_embed_doc['embed'])
+                donation_embed = embeds.get_embed_from_dict(
+                    donation_embed_doc['embed'])
 
                 donation_embed.set_thumbnail(url=after.avatar_url)
 
                 donation_embed_formatted = await format_embed(after, after.guild, donation_embed)
 
-                donation_channel = after.guild.get_channel(donations_config['donation_channel'])
+                donation_channel = after.guild.get_channel(
+                    donations_config['donation_channel'])
                 await donation_channel.send(content=after.mention, embed=donation_embed_formatted)
-
 
         elif len(before.roles) > len(after.roles):
 
@@ -398,6 +399,7 @@ class Events(commands.Cog):
                 doc = await self.nicknames_collection.find_one({'_id': role_id})
 
                 await after.edit(nick='')
+
 
 def setup(bot):
     bot.add_cog(Events(bot))
