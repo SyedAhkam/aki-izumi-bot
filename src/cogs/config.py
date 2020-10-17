@@ -198,7 +198,7 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully set the ``donation_channel`` as ``{channel.name}``')
-    
+
     @_set.command(name='donation_role', help='Set the role to be used for detecting a donation.')
     @commands.has_permissions(administrator=True)
     async def donation_role(self, ctx, role: commands.RoleConverter = None):
