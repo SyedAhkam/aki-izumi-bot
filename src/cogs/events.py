@@ -405,7 +405,8 @@ class Events(commands.Cog):
     async def on_user_update(self, user_before, user_after):
         if not (user_before.name == user_after.name):
             # username update
-            bad_names = ['Stalker', 'Stalkers', 'drugs', 'drug', 'droogs', 'drooogs', 'drooog', 'Alcohol', 'slut', 'sluts', 'droog', 'virgin', 'sexy', 'bastard', 'bastards', 'dyke', 'whore', 'whores', 'smexy', 'secy', 'vape', 'vaping', 'rape', 'raped', 'rapes', 'thot', 'thots', 'pussy', 'dick', 'dicks', 'cocks', 'cock', 'Coochie', 'nude', 'nudes', 'virginity', 'pedophile', 'pedo', 'pedophiles', 'hentai', 'porn', 'sex', 'boobs', 'tits', 'titties', 'boob', 'anal', 'anus', 'arse', 'ballsack', 'blowjob', 'bollock', 'bollok', 'boner', 'buttplug', 'clitoris', 'cum', 'cunt', 'cunts', 'dildo', 'erection', 'fellate', 'fellatio', 'felching', 'fudgepacker', 'genitals', 'jizz', 'knobend', 'labia', 'masturbate', 'masturbating', 'muff', 'penis', 'pubes', 'scrotum', 'smegma', 'spunk', 'vagina', 'spank', 'spanking', 'titty', 'asshat', 'pu55y', 'pen1s', '卐', 'faggots', 'faggot', 'fag', 'nigga', 'nigger', 'n.i.g.g.e.r', 'niggers', 'niggas', 'Cummies', 'tiddy', 'pp', 'cummy', 'wank', 'boobies', 'boobie', 'booby', 'paedophile', 'paedophiles', 'paedophilia', 'paedo', 'rapist', 'whalecum', 'condom', 'condoms', 'thicc']
+            bad_names = ['Stalker', 'Stalkers', 'drugs', 'drug', 'droogs', 'drooogs', 'drooog', 'Alcohol', 'slut', 'sluts', 'droog', 'virgin', 'sexy', 'bastard', 'bastards', 'dyke', 'whore', 'whores', 'smexy', 'secy', 'vape', 'vaping', 'rape', 'raped', 'rapes', 'thot', 'thots', 'pussy', 'dick', 'dicks', 'cocks', 'cock', 'Coochie', 'nude', 'nudes', 'virginity', 'pedophile', 'pedo', 'pedophiles', 'hentai', 'porn', 'sex', 'boobs', 'tits', 'titties', 'boob', 'anal', 'anus', 'arse', 'ballsack', 'blowjob', 'bollock', 'bollok', 'boner', 'buttplug', 'clitoris', 'cum',
+                         'cunt', 'cunts', 'dildo', 'erection', 'fellate', 'fellatio', 'felching', 'fudgepacker', 'genitals', 'jizz', 'knobend', 'labia', 'masturbate', 'masturbating', 'muff', 'penis', 'pubes', 'scrotum', 'smegma', 'spunk', 'vagina', 'spank', 'spanking', 'titty', 'asshat', 'pu55y', 'pen1s', '卐', 'faggots', 'faggot', 'fag', 'nigga', 'nigger', 'n.i.g.g.e.r', 'niggers', 'niggas', 'Cummies', 'tiddy', 'pp', 'cummy', 'wank', 'boobies', 'boobie', 'booby', 'paedophile', 'paedophiles', 'paedophilia', 'paedo', 'rapist', 'whalecum', 'condom', 'condoms', 'thicc']
 
             is_name_bad = False
 
@@ -415,7 +416,7 @@ class Events(commands.Cog):
                 if word in bad_names:
                     is_name_bad = True
                     print('1')
-            
+
             if user_after.name in word:
                 is_name_bad = True
                 print('2')
@@ -426,16 +427,19 @@ class Events(commands.Cog):
 
                 embed = embeds.blank()
                 embed.set_author(name='Bad name detected!')
-                embed.set_footer(text=f'User ID: {user_after.id}', icon_url=user_after.avatar_url)
+                embed.set_footer(
+                    text=f'User ID: {user_after.id}', icon_url=user_after.avatar_url)
 
-                embed.add_field(name='Name:', value=user_after.name, inline=True)
-                embed.add_field(name='Mention:', value=user_after.mention, inline=True)
-                embed.add_field(name='Created at:', value=ago.human(user_after.created_at), inline=True)
+                embed.add_field(
+                    name='Name:', value=user_after.name, inline=True)
+                embed.add_field(name='Mention:',
+                                value=user_after.mention, inline=True)
+                embed.add_field(name='Created at:', value=ago.human(
+                    user_after.created_at), inline=True)
 
                 await staff_chat_channel.send(embed=embed)
 
                 await user_after.send(f'You\'ve been warned in the {guild.name} server because of your username.\nPlease change it.')
-                
 
 
 def setup(bot):
