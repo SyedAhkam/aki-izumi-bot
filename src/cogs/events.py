@@ -5,6 +5,7 @@ import embeds
 import exceptions
 import datetime
 import collections
+import ago
 
 
 def format_nickname(string, data):
@@ -337,7 +338,7 @@ class Events(commands.Cog):
 
             except KeyError:
                 pass
-        
+
         if message.content.startswith('a!'):
             try:
                 trigger_name = message.content[2:]
@@ -379,15 +380,16 @@ class Events(commands.Cog):
             donations_config = await self.config_collection.find_one({'_id': 'donations'})
             if role_id == donations_config['donation_role']:
                 donation_embed_doc = await self.embeds_collection.find_one({'_id': 'donation'})
-                donation_embed = embeds.get_embed_from_dict(donation_embed_doc['embed'])
+                donation_embed = embeds.get_embed_from_dict(
+                    donation_embed_doc['embed'])
 
                 donation_embed.set_thumbnail(url=after.avatar_url)
 
                 donation_embed_formatted = await format_embed(after, after.guild, donation_embed)
 
-                donation_channel = after.guild.get_channel(donations_config['donation_channel'])
+                donation_channel = after.guild.get_channel(
+                    donations_config['donation_channel'])
                 await donation_channel.send(content=after.mention, embed=donation_embed_formatted)
-
 
         elif len(before.roles) > len(after.roles):
 
@@ -398,6 +400,43 @@ class Events(commands.Cog):
                 doc = await self.nicknames_collection.find_one({'_id': role_id})
 
                 await after.edit(nick='')
+
+    @commands.Cog.listener()
+    async def on_user_update(self, user_before, user_after):
+        if not (user_before.name == user_after.name):
+            # username update
+            bad_names = ['Stalker', 'Stalkers', 'drugs', 'drug', 'droogs', 'drooogs', 'drooog', 'Alcohol', 'slut', 'sluts', 'droog', 'virgin', 'sexy', 'bastard', 'bastards', 'dyke', 'whore', 'whores', 'smexy', 'secy', 'vape', 'vaping', 'rape', 'raped', 'rapes', 'thot', 'thots', 'pussy', 'dick', 'dicks', 'cocks', 'cock', 'Coochie', 'nude', 'nudes', 'virginity', 'pedophile', 'pedo', 'pedophiles', 'hentai', 'porn', 'sex', 'boobs', 'tits', 'titties', 'boob', 'anal', 'anus', 'arse', 'ballsack', 'blowjob', 'bollock', 'bollok', 'boner', 'buttplug', 'clitoris', 'cum', 'cunt', 'cunts', 'dildo', 'erection', 'fellate', 'fellatio', 'felching', 'fudgepacker', 'genitals', 'jizz', 'knobend', 'labia', 'masturbate', 'masturbating', 'muff', 'penis', 'pubes', 'scrotum', 'smegma', 'spunk', 'vagina', 'spank', 'spanking', 'titty', 'asshat', 'pu55y', 'pen1s', '卐', 'faggots', 'faggot', 'fag', 'nigga', 'nigger', 'n.i.g.g.e.r', 'niggers', 'niggas', 'Cummies', 'tiddy', 'pp', 'cummy', 'wank', 'boobies', 'boobie', 'booby', 'paedophile', 'paedophiles', 'paedophilia', 'paedo', 'rapist', 'whalecum', 'condom', 'condoms', 'thicc']
+
+            is_name_bad = False
+
+            print(user_after.name)
+
+            for word in user_after.name:
+                if word in bad_names:
+                    is_name_bad = True
+                    print('1')
+            
+            if user_after.name in word:
+                is_name_bad = True
+                print('2')
+
+            if is_name_bad:
+                guild = self.bot.get_guild(697877261952483471)
+                staff_chat_channel = guild.get_channel(728096716884279357)
+
+                embed = embeds.blank()
+                embed.set_author(name='Bad name detected!')
+                embed.set_footer(text=f'User ID: {user_after.id}', icon_url=user_after.avatar_url)
+
+                embed.add_field(name='Name:', value=user_after.name, inline=True)
+                embed.add_field(name='Mention:', value=user_after.mention, inline=True)
+                embed.add_field(name='Created at:', value=ago.human(user_after.created_at), inline=True)
+
+                await staff_chat_channel.send(embed=embed)
+
+                await user_after.send(f'You\'ve been warned in the {guild.name} server because of your username.\nPlease change it.')
+                
+
 
 def setup(bot):
     bot.add_cog(Events(bot))
