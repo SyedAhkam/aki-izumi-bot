@@ -348,6 +348,20 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully added ``{trigger}`` to triggers list')
 
+    @add.command(name='join_role', help='Add a role to be added to members on join.')
+    @commands.has_permissions(administrator=True)
+    async def join_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+        self.config_collection.find_one_and_update(
+            {'_id': 'join_roles'},
+            {'$push': {
+                'roles': role.id
+            }}
+        )
+
+        await ctx.send(f'Successfully added the role ``{role.name}`` to be given on join.')
+
     @commands.group(name='remove', help='Remove config values from db.', invoke_without_command=True)
     async def remove(self, ctx):
         commands = self.remove.commands
@@ -386,6 +400,20 @@ class Config(commands.Cog):
         await self.nicknames_collection.delete_one({'_id': role.id})
 
         await ctx.send(f'Successfully removed ``{role.name}`` from ``nickname_role`` list.')
+
+    @remove.command(name='join_role', help='Remove a role to be added to members on join.')
+    @commands.has_permissions(administrator=True)
+    async def _join_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+        self.config_collection.find_one_and_update(
+            {'_id': 'join_roles'},
+            {'$pull': {
+                'roles': role.id
+            }}
+        )
+
+        await ctx.send(f'Successfully added the role ``{role.name}`` to be given on join.')
 
     @commands.command(name='placeholders', help='See the list of placeholders available for use in other commands.')
     @commands.has_permissions(administrator=True)

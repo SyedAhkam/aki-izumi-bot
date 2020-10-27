@@ -436,7 +436,18 @@ class Events(commands.Cog):
 
                 await user_after.send(f'You\'ve been warned in the {guild.name} server because of your username.\nPlease change it.')
                 
+    @commands.Cog.listener()
+    async def on_member_join(self, member_before, member_after):
+        if member_after.bot:
+            return
 
+        join_roles_doc = await self.config_collection.find_one({'_id': 'join_roles'})
+        roles = []
+        for role_id in join_roles_doc['roles']:
+            role_obj = await member_after.guild.get_role(role_id)
+            roles.append(role_obj)
+
+        await member_after.add_roles(roles, reason='Auto join roles')
 
 def setup(bot):
     bot.add_cog(Events(bot))
