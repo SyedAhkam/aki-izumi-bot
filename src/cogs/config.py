@@ -221,7 +221,7 @@ class Config(commands.Cog):
             return await ctx.send('Please provide a channel.')
 
         await self.config_collection.find_one_and_update(
-            {'_id': 'donations'},
+            {'_id': 'ultimate_donations'},
             {'$set': {
                 'ultimate_donation_channel': channel.id
             }}
