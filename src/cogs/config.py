@@ -213,6 +213,36 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully set the ``donation_role`` as ``{role.name}``')
+    
+    @_set.command(name='ultimate_donation_channel', help='Set the channel to be used for ultimate donation messages.')
+    @commands.has_permissions(administrator=True)
+    async def ultimate_donation_channel(self, ctx, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'donations'},
+            {'$set': {
+                'ultimate_donation_channel': channel.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``ultimate_donation_channel`` as ``{channel.name}``')
+    
+    @_set.command(name='ultimate_donation_role', help='Set the role to be used for detecting a ultimate donation.')
+    @commands.has_permissions(administrator=True)
+    async def ultimate_donation_role(self, ctx, role: commands.RoleConverter = None):
+        if not role:
+            return await ctx.send('Please provide a role.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'ultimate_donations'},
+            {'$set': {
+                'ultimate_donation_role': role.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``ultimate_donation_role`` as ``{role.name}``')
 
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
