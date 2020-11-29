@@ -390,6 +390,21 @@ class Events(commands.Cog):
                 donation_channel = after.guild.get_channel(
                     donations_config['donation_channel'])
                 await donation_channel.send(content=after.mention, embed=donation_embed_formatted)
+           
+            # ultimate donations
+            ultimate_donations_config = await self.config_collection.find_one({'_id': 'ultimate_donations'})
+            if role_id == ultimate_donations_config['ultimate_donation_role']:
+                ultimate_donation_embed_doc = await self.embeds_collection.find_one({'_id': 'ultimate_donation'})
+                ultimate_donation_embed = embeds.get_embed_from_dict(
+                    ultimate_donation_embed_doc['embed'])
+
+                ultimate_donation_embed.set_thumbnail(url=after.avatar_url)
+
+                ultimate_donation_embed_formatted = await format_embed(after, after.guild, ultimate_donation_embed)
+
+                ultimate_donation_channel = after.guild.get_channel(
+                    ultimate_donations_config['ultimate_donation_channel'])
+                await ultimate_donation_channel.send(content=after.mention, embed=ultimate_donation_embed_formatted)
 
         elif len(before.roles) > len(after.roles):
 
