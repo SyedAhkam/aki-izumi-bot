@@ -8,7 +8,14 @@ class Reminders(commands.Cog):
     def cog_unload(self):
         self.webhook_reminder.cancel()
     
-    @tasks.loop(hours=24, reconnect=True)
+#     @tasks.loop(hours=24, reconnect=True)
+#     async def webhook_reminder(self):
+#         guild = self.bot.get_guild(697877261952483471)
+#         channel = guild.get_channel(728096716884279357)
+#         webhooks = await channel.webhooks()
+#         await webhook[0].send('Reminder!')
+
+    @tasks.loop(minutes=2, reconnect=True)
     async def webhook_reminder(self):
         guild = self.bot.get_guild(697877261952483471)
         channel = guild.get_channel(728096716884279357)
