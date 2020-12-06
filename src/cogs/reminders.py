@@ -14,7 +14,7 @@ class Reminders(commands.Cog):
 #         guild = self.bot.get_guild(697877261952483471)
 #         channel = guild.get_channel(728096716884279357)
 #         webhooks = await channel.webhooks()
-#         await webhook[0].send('Reminder!')
+#         await webhooks[0].send('Reminder!')
 
     @tasks.loop(minutes=2, reconnect=True)
     async def webhook_reminder(self):
@@ -22,7 +22,7 @@ class Reminders(commands.Cog):
         guild = self.bot.get_guild(697877261952483471)
         channel = guild.get_channel(728096716884279357)
         webhooks = await channel.webhooks()
-        await webhook[0].send('Reminder!')
+        await webhooks[0].send('Reminder!')
     
 def setup(bot):
     bot.add_cog(Reminders(bot))
