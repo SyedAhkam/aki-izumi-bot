@@ -5,7 +5,7 @@ import embeds
 class Reminders(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.embed_collection = bot.db.embeds
+        self.embeds_collection = bot.db.embeds
         self.webhook_reminder.start()
     
     def cog_unload(self):
