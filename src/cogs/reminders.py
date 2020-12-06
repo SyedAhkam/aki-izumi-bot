@@ -29,7 +29,7 @@ class Reminders(commands.Cog):
         embed_doc = await self.embeds_collection.find_one({'_id': 'staff_reminder'})
         embed = embeds.get_embed_from_dict(embed_doc['embed'])
         
-        await webhooks[0].send(embed=embed)
+        await webhooks[0].send(content='@everyone', embed=embed)
     
 def setup(bot):
     bot.add_cog(Reminders(bot))
