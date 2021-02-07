@@ -198,7 +198,7 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully set the ``donation_channel`` as ``{channel.name}``')
-    
+
     @_set.command(name='donation_role', help='Set the role to be used for detecting a donation.')
     @commands.has_permissions(administrator=True)
     async def donation_role(self, ctx, role: commands.RoleConverter = None):
@@ -213,7 +213,7 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully set the ``donation_role`` as ``{role.name}``')
-    
+
     @_set.command(name='ultimate_donation_channel', help='Set the channel to be used for ultimate donation messages.')
     @commands.has_permissions(administrator=True)
     async def ultimate_donation_channel(self, ctx, channel: commands.TextChannelConverter = None):
@@ -228,7 +228,7 @@ class Config(commands.Cog):
         )
 
         await ctx.send(f'Successfully set the ``ultimate_donation_channel`` as ``{channel.name}``')
-    
+
     @_set.command(name='ultimate_donation_role', help='Set the role to be used for detecting a ultimate donation.')
     @commands.has_permissions(administrator=True)
     async def ultimate_donation_role(self, ctx, role: commands.RoleConverter = None):
