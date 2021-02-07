@@ -244,6 +244,21 @@ class Config(commands.Cog):
 
         await ctx.send(f'Successfully set the ``ultimate_donation_role`` as ``{role.name}``')
 
+    @_set.command(name='disboard_channel', help='Set the channel to be used for disboard.')
+    @commands.has_permissions(administrator=True)
+    async def ultimate_donation_channel(self, ctx, channel: commands.TextChannelConverter = None):
+        if not channel:
+            return await ctx.send('Please provide a channel.')
+
+        await self.config_collection.find_one_and_update(
+            {'_id': 'disboard'},
+            {'$set': {
+                'disboard_channel': channel.id
+            }}
+        )
+
+        await ctx.send(f'Successfully set the ``disboard_channel`` as ``{channel.name}``')
+
     @commands.group(name='add', help='Group of commands for adding some config values.', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def add(self, ctx):
