@@ -29,9 +29,11 @@ class Reminders(commands.Cog):
             guild = self.bot.get_guild(697877261952483471)
 
             disboard_channel_doc = await self.config_collection.find_one({'_id': 'disboard'})
-            disboard_channel_obj = guild.get_channel(disboard_channel_doc['disboard_channel'])
-            
-            await self.bot.loop.create_task(self.remind_disboard(disboard_channel_obj, 7200)) # 2 hours
+            disboard_channel_obj = guild.get_channel(
+                disboard_channel_doc['disboard_channel'])
+
+            # 2 hours
+            await self.bot.loop.create_task(self.remind_disboard(disboard_channel_obj, 7200))
             print('Scheduled loop for disboard')
 
     @tasks.loop(hours=24, reconnect=True)
