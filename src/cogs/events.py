@@ -221,6 +221,8 @@ class Events(commands.Cog):
 
                 verified_role = message.guild.get_role(
                     verification_doc['verified_role_id'])
+                
+                main_chat_channel = message.guild.get_channel(784563365103403019)
 
                 await message.author.add_roles(verified_role)
 
@@ -228,7 +230,7 @@ class Events(commands.Cog):
 
                 embed = embeds.normal(
                     verification_doc['verification_followup_message'], 'You just got verified!', ctx)
-                await message.channel.send(content=message.author.mention, embed=embed)
+                await main_chat_channel.send(content=message.author.mention, embed=embed)
                 await message.delete()
 
         # xp
