@@ -230,7 +230,7 @@ class Events(commands.Cog):
 
                 embed = embeds.normal(
                     verification_doc['verification_followup_message'], 'You just got verified!', ctx)
-                welcome_role = ctx.guild.get_role(697877262560657516)
+                welcome_role = ctx.guild.get_role(697877262560657517)
                 await main_chat_channel.send(content=f'{message.author.mention} {welcome_role.mention}', embed=embed)
                 await message.delete()
 
