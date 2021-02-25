@@ -38,7 +38,7 @@ class Reminders(commands.Cog):
     async def webhook_reminder(self):
         await self.bot.wait_until_ready()
         guild = self.bot.get_guild(697877261952483471)
-        channel = guild.get_channel(728096716884279357)
+        channel = guild.get_channel(814231119724675073)
         webhooks = await channel.webhooks()
 
         embed_doc = await self.embeds_collection.find_one({'_id': 'staff_reminder'})
