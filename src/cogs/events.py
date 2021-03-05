@@ -222,7 +222,7 @@ class Events(commands.Cog):
                 verified_role = message.guild.get_role(
                     verification_doc['verified_role_id'])
                 
-                main_chat_channel = message.guild.get_channel(784563365103403019)
+                main_chat_channel = message.guild.get_channel(817295129542000690)
 
                 await message.author.add_roles(verified_role)
 
