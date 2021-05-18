@@ -1,4 +1,4 @@
 src/.env
 __pycache__/
 .vscode
-.theia/
+.theia/.env
