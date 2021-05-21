@@ -22,7 +22,7 @@ class Info(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def thanksies(self, ctx, channel: discord.TextChannel=None):
+    async def thanksies(self, ctx, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
 
         for embed_name in ['thanksies', 'thanksies2', 'thanksies3']:
@@ -30,6 +30,7 @@ class Info(commands.Cog):
             embed = embeds.get_embed_from_dict(embed_doc['embed'])
 
             await channel.send(content="@everyone", embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Info(bot))
