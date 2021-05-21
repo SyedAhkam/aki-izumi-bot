@@ -21,6 +21,7 @@ class Info(commands.Cog):
         await ctx.send(f'Pong!\n{ping}ms')
 
     @commands.command()
+    @commands.is_owner()
     async def thanksies(self, ctx, channel: discord.TextChannel=None):
         channel = channel or ctx.channel
 
