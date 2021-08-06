@@ -180,7 +180,7 @@ class Events(commands.Cog):
 
                     if not (last_number + 1) == num:
 
-                        emoji = self.bot.get_emoji(746062864665804902)
+                        emoji = self.bot.get_emoji(814366752603242507)
                         await message.add_reaction(str(emoji))
 
                         embed = embeds.normal(
@@ -199,7 +199,7 @@ class Events(commands.Cog):
 
                     # Everything stays good
 
-                    emoji = self.bot.get_emoji(746062865496277073)
+                    emoji = self.bot.get_emoji(814366752603242507)
                     await message.add_reaction(str(emoji))
 
                     await self.config_collection.find_one_and_update(
