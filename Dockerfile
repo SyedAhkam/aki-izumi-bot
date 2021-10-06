@@ -2,7 +2,7 @@ FROM ubuntu:latest
 WORKDIR /app
 
 RUN apt update && apt upgrade -y
-RUN apt install python3 python3-pip -y
+RUN apt install python3 python3-pip -y --fix-missing
 
 COPY requirements.txt requirements.txt
 
